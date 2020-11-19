@@ -3,12 +3,22 @@
  * for when the value has changed
  */
 class WrappedValue {
-    constructor() {
+    constructor(varName, isPermanent) {
         this._value = undefined;
         this._callback = (oldVal, newVal) => { };
+        this._isPermanent = isPermanent;
+        this._varName = varName;
+
+        if (this._isPermanent) {
+            this._value = JSON.parse(localStorage.getItem(this._varName));
+        }
     }
 
     get value() {
+        if (this._isPermanent && this._value == undefined) {
+            this._value = JSON.parse(localStorage.getItem(this._varName));
+        }
+
         return this._value;
     }
 
@@ -21,8 +31,13 @@ class WrappedValue {
 
         this._value = newValue;
 
+        // for permanent variables, set the variable type
+        if (this._isPermanent) {
+            localStorage.setItem(this._varName, JSON.stringify(this._value));
+        }
+
         // do not fire callback if the old and new values do not match
-        if (oldValue !== newValue) {
+        if (this._callback && oldValue !== newValue) {
             // perform the callback that the value has just changed
             this._callback(oldValue, this._value);
         }
