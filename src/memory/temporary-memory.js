@@ -1,13 +1,24 @@
-class TemporaryMemory extends Proxy {
-    constructor(memoryInstance) {
-        super({}, {
+const WrappedValue = require("./wrapped-value");
+
+class TemporaryMemory {
+    constructor() {
+        return new Proxy({}, {
             get: (target, prop, receiver) => {
+                // sets the watcher callback
+                if (prop === "watch") {
+                    return (variable, callback) => {
+                        if (!target[variable]) {
+                            target[variable] = new WrappedValue();
+                        }
+
+                        target[variable].watch = callback;
+                    };
+                }
+
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
                     target[prop] = new WrappedValue();
                 }
-
-                console.log(receiver);
 
                 return target[prop].value;
             },
@@ -21,14 +32,6 @@ class TemporaryMemory extends Proxy {
                 return true;
             }
         });
-
-        this._memory = memoryInstance;
-    }
-
-    watch(variable, callback) {
-        const existingVariable = this[variable];
-
-        console.log(existingVariable);
     }
 }
 

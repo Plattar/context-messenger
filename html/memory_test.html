@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Page Title</title>
+    <script type='text/javascript' src='./../build/es2019/plattar-context-messenger.js'></script>
+    <script type='text/javascript'>
+        Plattar.Memory.temp.watch("hello_world", (oldVar, newVar) => {
+            console.log("You just changed hello_world variable!");
+            console.log("Previous Variable was " + oldVar);
+            console.log("New Variable was " + newVar);
+        });
+    </script>
+</head>
+
+<body>
+    <p>Open console and perform operations like follows</p>
+    <p>Plattar.Memory.temp.hello_world = "your_variable"</p>
+</body>
+
+</html>

@@ -1,37 +1,5 @@
 "use strict";
 
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
-
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _wrapNativeSuper(Class) { var _cache = typeof Map === "function" ? new Map() : undefined; _wrapNativeSuper = function _wrapNativeSuper(Class) { if (Class === null || !_isNativeFunction(Class)) return Class; if (typeof Class !== "function") { throw new TypeError("Super expression must either be null or a function"); } if (typeof _cache !== "undefined") { if (_cache.has(Class)) return _cache.get(Class); _cache.set(Class, Wrapper); } function Wrapper() { return _construct(Class, arguments, _getPrototypeOf(this).constructor); } Wrapper.prototype = Object.create(Class.prototype, { constructor: { value: Wrapper, enumerable: false, writable: true, configurable: true } }); return _setPrototypeOf(Wrapper, Class); }; return _wrapNativeSuper(Class); }
-
-function _construct(Parent, args, Class) { if (_isNativeReflectConstruct()) { _construct = Reflect.construct; } else { _construct = function _construct(Parent, args, Class) { var a = [null]; a.push.apply(a, args); var Constructor = Function.bind.apply(Parent, a); var instance = new Constructor(); if (Class) _setPrototypeOf(instance, Class.prototype); return instance; }; } return _construct.apply(null, arguments); }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
-
-function _isNativeFunction(fn) { return Function.toString.call(fn).indexOf("[native code]") !== -1; }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -96,7 +64,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     return r;
   }()({
     1: [function (require, module, exports) {
+      "use strict";
+
       var Memory = require("./memory/memory.js");
+
+      module.exports = {
+        Memory: Memory
+      };
     }, {
       "./memory/memory.js": 2
     }],
@@ -114,8 +88,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         function Memory() {
           _classCallCheck(this, Memory);
 
-          this._tempMemory = new TemporaryMemory(this);
-          this._permMemory = new PermanentMemory(this);
+          this._tempMemory = new TemporaryMemory();
+          this._permMemory = new PermanentMemory();
         }
 
         _createClass(Memory, [{
@@ -139,66 +113,139 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       "./temporary-memory": 4
     }],
     3: [function (require, module, exports) {
-      var PermanentMemory = /*#__PURE__*/function (_Proxy) {
-        _inherits(PermanentMemory, _Proxy);
+      var WrappedValue = require("./wrapped-value");
 
-        var _super = _createSuper(PermanentMemory);
+      var PermanentMemory = function PermanentMemory() {
+        _classCallCheck(this, PermanentMemory);
 
-        function PermanentMemory(memoryInstance) {
-          var _arguments = arguments;
+        return new Proxy({}, {
+          get: function get(target, prop, receiver) {
+            // sets the watcher callback
+            if (prop === "watch") {
+              return function (variable, callback) {
+                if (!target[variable]) {
+                  target[variable] = new WrappedValue();
+                }
 
-          var _this;
+                target[variable].watch = callback;
+              };
+            } // on first access, we create a WrappedValue type
 
-          _classCallCheck(this, PermanentMemory);
 
-          _this = _super.call(this, {}, {
-            get: function get(target, prop, receiver) {
-              return Reflect.get.apply(Reflect, _toConsumableArray(_arguments));
-            },
-            set: function set(obj, prop, value) {
-              obj[prop] = value;
-              return true;
+            if (!target[prop]) {
+              target[prop] = new WrappedValue();
             }
-          });
-          _this._memory = memoryInstance;
-          return _this;
-        }
 
-        return PermanentMemory;
-      }( /*#__PURE__*/_wrapNativeSuper(Proxy));
+            return target[prop].value;
+          },
+          set: function set(target, prop, value) {
+            if (!target[prop]) {
+              target[prop] = new WrappedValue();
+            }
+
+            target[prop].value = value;
+            return true;
+          }
+        });
+      };
 
       module.exports = PermanentMemory;
-    }, {}],
+    }, {
+      "./wrapped-value": 5
+    }],
     4: [function (require, module, exports) {
-      var TemporaryMemory = /*#__PURE__*/function (_Proxy2) {
-        _inherits(TemporaryMemory, _Proxy2);
+      var WrappedValue = require("./wrapped-value");
 
-        var _super2 = _createSuper(TemporaryMemory);
+      var TemporaryMemory = function TemporaryMemory() {
+        _classCallCheck(this, TemporaryMemory);
 
-        function TemporaryMemory(memoryInstance) {
-          var _arguments2 = arguments;
+        return new Proxy({}, {
+          get: function get(target, prop, receiver) {
+            // sets the watcher callback
+            if (prop === "watch") {
+              return function (variable, callback) {
+                if (!target[variable]) {
+                  target[variable] = new WrappedValue();
+                }
 
-          var _this2;
+                target[variable].watch = callback;
+              };
+            } // on first access, we create a WrappedValue type
 
-          _classCallCheck(this, TemporaryMemory);
 
-          _this2 = _super2.call(this, {}, {
-            get: function get(target, prop, receiver) {
-              return Reflect.get.apply(Reflect, _toConsumableArray(_arguments2));
-            },
-            set: function set(obj, prop, value) {
-              obj[prop] = value;
-              return true;
+            if (!target[prop]) {
+              target[prop] = new WrappedValue();
             }
-          });
-          _this2._memory = memoryInstance;
-          return _this2;
-        }
 
-        return TemporaryMemory;
-      }( /*#__PURE__*/_wrapNativeSuper(Proxy));
+            return target[prop].value;
+          },
+          set: function set(target, prop, value) {
+            if (!target[prop]) {
+              target[prop] = new WrappedValue();
+            }
+
+            target[prop].value = value;
+            return true;
+          }
+        });
+      };
 
       module.exports = TemporaryMemory;
+    }, {
+      "./wrapped-value": 5
+    }],
+    5: [function (require, module, exports) {
+      /**
+       * WrappedValue represents a generic value type with a callback function
+       * for when the value has changed
+       */
+      var WrappedValue = /*#__PURE__*/function () {
+        function WrappedValue() {
+          _classCallCheck(this, WrappedValue);
+
+          this._value = undefined;
+
+          this._callback = function (oldVal, newVal) {};
+        }
+
+        _createClass(WrappedValue, [{
+          key: "value",
+          get: function get() {
+            return this._value;
+          },
+          set: function set(newValue) {
+            if (typeof newValue === "function") {
+              throw new TypeError("WrappedValue.value cannot be set to a function type");
+            }
+
+            var oldValue = this._value;
+            this._value = newValue; // perform the callback that the value has just changed
+
+            this._callback(oldValue, this._value);
+          }
+          /**
+           * Watches for any change in the current variable
+           */
+
+        }, {
+          key: "watch",
+          set: function set(newValue) {
+            if (typeof newValue === "function") {
+              if (newValue.length == 2) {
+                this._callback = newValue;
+              } else {
+                throw new RangeError("WrappedValue.watch callback must accept exactly 2 variables. Try using WrappedValue.watch = (oldVal, newVal) => {}");
+              }
+            } else {
+              throw new TypeError("WrappedValue.watch must be a type of function. Try using WrappedValue.watch = (oldVal, newVal) => {}");
+            }
+          }
+        }]);
+
+        return WrappedValue;
+      }();
+
+      module.exports = WrappedValue;
     }, {}]
   }, {}, [1])(1);
 });

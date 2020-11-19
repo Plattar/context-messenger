@@ -7,8 +7,8 @@ const TemporaryMemory = require("./temporary-memory");
  */
 class Memory {
     constructor() {
-        this._tempMemory = new TemporaryMemory(this);
-        this._permMemory = new PermanentMemory(this);
+        this._tempMemory = new TemporaryMemory();
+        this._permMemory = new PermanentMemory();
     }
 
     get temp() {
