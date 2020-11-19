@@ -15,9 +15,25 @@ class PermanentMemory {
                     };
                 }
 
+                // clears everything, including specific items
                 if (prop === "clear") {
                     return () => {
+                        for (const pitem of Object.getOwnPropertyNames(target)) {
+                            delete target[pitem];
+
+                            localStorage.removeItem(pitem);
+                        }
+                    };
+                }
+
+                // clears everything, including from storage
+                if (prop === "purge") {
+                    return () => {
                         localStorage.clear();
+
+                        for (const prop of Object.getOwnPropertyNames(target)) {
+                            delete target[prop];
+                        }
                     };
                 }
 

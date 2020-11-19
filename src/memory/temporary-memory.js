@@ -15,6 +15,16 @@ class TemporaryMemory {
                     };
                 }
 
+                // clears everything
+                // purge is the same thing for all temporary variables
+                if (prop === "clear" || prop === "purge") {
+                    return () => {
+                        for (const prop of Object.getOwnPropertyNames(target)) {
+                            delete target[prop];
+                        }
+                    };
+                }
+
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
                     target[prop] = new WrappedValue(prop, false);
