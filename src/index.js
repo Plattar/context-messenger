@@ -1,2 +1,2 @@
-const Memory = require("./memory");
+const Memory = require("./memory/memory.js");
 
