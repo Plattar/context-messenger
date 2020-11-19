@@ -21,8 +21,11 @@ class WrappedValue {
 
         this._value = newValue;
 
-        // perform the callback that the value has just changed
-        this._callback(oldValue, this._value);
+        // do not fire callback if the old and new values do not match
+        if (oldValue !== newValue) {
+            // perform the callback that the value has just changed
+            this._callback(oldValue, this._value);
+        }
     }
 
     /**
