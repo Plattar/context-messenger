@@ -40,23 +40,45 @@ class PermanentMemory {
                 if (prop === "watch") {
                     return (variable, callback) => {
                         if (!target[variable]) {
-                            target[variable] = new WrappedValue();
+                            target[variable] = new WrappedValue(variable, true);
                         }
 
                         target[variable].watch = callback;
                     };
                 }
 
+                // clears everything, including specific items
+                if (prop === "clear") {
+                    return () => {
+                        for (const pitem of Object.getOwnPropertyNames(target)) {
+                            delete target[pitem];
+
+                            localStorage.removeItem(pitem);
+                        }
+                    };
+                }
+
+                // clears everything, including from storage
+                if (prop === "purge") {
+                    return () => {
+                        localStorage.clear();
+
+                        for (const prop of Object.getOwnPropertyNames(target)) {
+                            delete target[prop];
+                        }
+                    };
+                }
+
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
-                    target[prop] = new WrappedValue();
+                    target[prop] = new WrappedValue(prop, true);
                 }
 
                 return target[prop].value;
             },
             set: (target, prop, value) => {
                 if (!target[prop]) {
-                    target[prop] = new WrappedValue();
+                    target[prop] = new WrappedValue(prop, true);
                 }
 
                 target[prop].value = value;
@@ -79,23 +101,33 @@ class TemporaryMemory {
                 if (prop === "watch") {
                     return (variable, callback) => {
                         if (!target[variable]) {
-                            target[variable] = new WrappedValue();
+                            target[variable] = new WrappedValue(variable, false);
                         }
 
                         target[variable].watch = callback;
                     };
                 }
 
+                // clears everything
+                // purge is the same thing for all temporary variables
+                if (prop === "clear" || prop === "purge") {
+                    return () => {
+                        for (const prop of Object.getOwnPropertyNames(target)) {
+                            delete target[prop];
+                        }
+                    };
+                }
+
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
-                    target[prop] = new WrappedValue();
+                    target[prop] = new WrappedValue(prop, false);
                 }
 
                 return target[prop].value;
             },
             set: (target, prop, value) => {
                 if (!target[prop]) {
-                    target[prop] = new WrappedValue();
+                    target[prop] = new WrappedValue(prop, false);
                 }
 
                 target[prop].value = value;
@@ -113,12 +145,22 @@ module.exports = TemporaryMemory;
  * for when the value has changed
  */
 class WrappedValue {
-    constructor() {
+    constructor(varName, isPermanent) {
         this._value = undefined;
         this._callback = (oldVal, newVal) => { };
+        this._isPermanent = isPermanent;
+        this._varName = varName;
+
+        if (this._isPermanent) {
+            this._value = JSON.parse(localStorage.getItem(this._varName));
+        }
     }
 
     get value() {
+        if (this._isPermanent && this._value == undefined) {
+            this._value = JSON.parse(localStorage.getItem(this._varName));
+        }
+
         return this._value;
     }
 
@@ -131,8 +173,16 @@ class WrappedValue {
 
         this._value = newValue;
 
-        // perform the callback that the value has just changed
-        this._callback(oldValue, this._value);
+        // for permanent variables, set the variable type
+        if (this._isPermanent) {
+            localStorage.setItem(this._varName, JSON.stringify(this._value));
+        }
+
+        // do not fire callback if the old and new values do not match
+        if (this._callback && oldValue !== newValue) {
+            // perform the callback that the value has just changed
+            this._callback(oldValue, this._value);
+        }
     }
 
     /**
