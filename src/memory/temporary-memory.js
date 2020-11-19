@@ -24,6 +24,12 @@ class TemporaryMemory extends Proxy {
 
         this._memory = memoryInstance;
     }
+
+    watch(variable, callback) {
+        const existingVariable = this[variable];
+
+        console.log(existingVariable);
+    }
 }
 
 module.exports = TemporaryMemory;
