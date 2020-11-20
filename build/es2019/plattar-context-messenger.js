@@ -7,7 +7,7 @@ module.exports = {
     memory,
     messenger
 }
-},{"./memory/memory.js":2,"./messenger/messenger.js":6}],2:[function(require,module,exports){
+},{"./memory/memory.js":2,"./messenger/messenger.js":7}],2:[function(require,module,exports){
 const PermanentMemory = require("./permanent-memory");
 const TemporaryMemory = require("./temporary-memory");
 
@@ -149,7 +149,7 @@ module.exports = TemporaryMemory;
 class WrappedValue {
     constructor(varName, isPermanent) {
         this._value = undefined;
-        this._callback = (oldVal, newVal) => { };
+        this._callback = undefined;
         this._isPermanent = isPermanent;
         this._varName = varName;
 
@@ -207,6 +207,59 @@ class WrappedValue {
 
 module.exports = WrappedValue;
 },{}],6:[function(require,module,exports){
+const WrappedFunction = require("./wrapped-function");
+
+class CurrentFunctions {
+    constructor() {
+        return new Proxy({}, {
+            get: (target, prop, receiver) => {
+                // sets the watcher callback
+                if (prop === "watch") {
+                    return (variable, callback) => {
+                        if (!target[variable]) {
+                            target[variable] = new WrappedFunction(variable);
+                        }
+
+                        target[variable].watch = callback;
+                    };
+                }
+
+                // clears everything, including specific items
+                if (prop === "clear" || prop === "purge") {
+                    return () => {
+                        for (const pitem of Object.getOwnPropertyNames(target)) {
+                            delete target[pitem];
+                        }
+                    };
+                }
+
+                // on first access, we create a WrappedValue type
+                if (!target[prop]) {
+                    target[prop] = new WrappedFunction(prop);
+                }
+
+                // return an anonymous function that executes for this variable
+                return (...args) => {
+                    return target[prop].exec(args);
+                };
+            },
+            set: (target, prop, value) => {
+                if (!target[prop]) {
+                    target[prop] = new WrappedFunction(prop);
+                }
+
+                target[prop].value = value;
+
+                return true;
+            }
+        });
+    }
+}
+
+module.exports = CurrentFunctions;
+},{"./wrapped-function":8}],7:[function(require,module,exports){
+const CurrentFunctions = require("./current-functions");
+
 /**
  * Messenger is a singleton that allows calling functions in multiple
  * contexts
@@ -215,12 +268,30 @@ class Messenger {
     constructor() {
         this._parentStack = window.parent ? window.parent : undefined;
         this._childStack = undefined;
+
+        this._currentFunctions = new CurrentFunctions();
     }
 
+    /**
+     * Allows calling functions on the parent stack. Use this if you
+     * are inside the iframe and want to call functions on the parent page.
+     */
     get parent() {
 
     }
 
+    /**
+     * The current stack is the current context. This is primarily used to
+     * define functions that exist on the current stack.
+     */
+    get current() {
+        return this._currentFunctions;
+    }
+
+    /**
+    * Allows calling functions on the child stack. Use this if you
+    * want to call functions defined inside of an iframe
+    */
     get child() {
 
     }
@@ -259,5 +330,75 @@ class Messenger {
 }
 
 module.exports = new Messenger();
+},{"./current-functions":6}],8:[function(require,module,exports){
+/**
+ * WrappedFunction represents a container that holds and maintains a specific function
+ * that can be called by any context
+ */
+class WrappedFunction {
+    constructor(funcName) {
+        this._value = undefined;
+        this._callback = undefined;
+        this._funcName = funcName;
+    }
+
+    /**
+     * executes the internally stored function with the provided arguments
+     */
+    _execute(...args) {
+        const rData = this._value(args);
+
+        if (this._callback) {
+            this._callback(rData, args);
+        }
+
+        return rData;
+    }
+
+    /**
+     * Executes the internal function in a Promise chain. Results of the execution
+     * will be evaluated in the promise chain itself
+     */
+    exec(...args) {
+        return new Promise((accept, reject) => {
+            if (!this._value) {
+                return reject(new Error("Function with name " + this._funcName + "() is not defined"));
+            }
+
+            try {
+                // otherwise execute the function
+                return accept(this._execute(args));
+            }
+            catch (e) {
+                return reject(e);
+            }
+        });
+    }
+
+    /**
+     * Stores a function for later execution
+     */
+    set value(newValue) {
+        if (typeof newValue !== "function") {
+            throw new TypeError("WrappedFunction.value must be a function. To store values use Plattar.memory");
+        }
+
+        this._value = newValue;
+    }
+
+    /**
+     * Watches for when this function is executed by some context
+     */
+    set watch(newValue) {
+        if (typeof newValue === "function") {
+            this._callback = newValue;
+        }
+        else {
+            throw new TypeError("WrappedFunction.watch must be a type of function. Try using WrappedFunction.watch = (rData, ...args) => {}");
+        }
+    }
+}
+
+module.exports = WrappedFunction;
 },{}]},{},[1])(1)
 });

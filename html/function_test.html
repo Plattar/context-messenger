@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Function Test</title>
+    <script type='text/javascript' src='./../build/es2019/plattar-context-messenger.js'></script>
+    <script type='text/javascript'>
+
+        // registering the function
+        Plattar.messenger.current.my_function = (arg1, arg2) => {
+            return arg1 + arg2;
+        };
+
+        // calling the function
+        Plattar.messenger.current.my_function(3, 4).then((res) => {
+            console.log("result of my_function is " + res);
+        }).catch((err) => {
+            console.error(err)
+        });
+    </script>
+</head>
+
+<body>
+</body>
+
+</html>
