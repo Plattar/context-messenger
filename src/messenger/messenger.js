@@ -8,10 +8,26 @@ class Messenger {
         this._childStack = undefined;
     }
 
+    /**
+     * Allows calling functions on the parent stack. Use this if you
+     * are inside the iframe and want to call functions on the parent page.
+     */
     get parent() {
 
     }
 
+    /**
+     * The current stack is the current context. This is primarily used to
+     * define functions that exist on the current stack.
+     */
+    get current() {
+
+    }
+
+    /**
+    * Allows calling functions on the child stack. Use this if you
+    * want to call functions defined inside of an iframe
+    */
     get child() {
 
     }
