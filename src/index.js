@@ -1,6 +1,8 @@
 "use strict";
-const Memory = require("./memory/memory.js");
+const memory = require("./memory/memory.js");
+const messenger = require("./messenger/messenger.js");
 
 module.exports = {
-    Memory
+    memory,
+    messenger
 }

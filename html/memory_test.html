@@ -5,13 +5,13 @@
     <title>Page Title</title>
     <script type='text/javascript' src='./../build/es2019/plattar-context-messenger.js'></script>
     <script type='text/javascript'>
-        Plattar.Memory.temp.watch("hello_world", (oldVar, newVar) => {
+        Plattar.memory.temp.watch("hello_world", (oldVar, newVar) => {
             console.log("You just changed hello_world variable!");
             console.log("Previous Variable was " + oldVar);
             console.log("New Variable was " + newVar);
         });
 
-        Plattar.Memory.temp.hello_world = "12345";
+        Plattar.memory.temp.hello_world = "12345";
     </script>
 </head>
 

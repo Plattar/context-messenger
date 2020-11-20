@@ -72,13 +72,17 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     1: [function (require, module, exports) {
       "use strict";
 
-      var Memory = require("./memory/memory.js");
+      var memory = require("./memory/memory.js");
+
+      var messenger = require("./messenger/messenger.js");
 
       module.exports = {
-        Memory: Memory
+        memory: memory,
+        messenger: messenger
       };
     }, {
-      "./memory/memory.js": 2
+      "./memory/memory.js": 2,
+      "./messenger/messenger.js": 6
     }],
     2: [function (require, module, exports) {
       var PermanentMemory = require("./permanent-memory");
@@ -332,6 +336,64 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       }();
 
       module.exports = WrappedValue;
+    }, {}],
+    6: [function (require, module, exports) {
+      /**
+       * Messenger is a singleton that allows calling functions in multiple
+       * contexts
+       */
+      var Messenger = /*#__PURE__*/function () {
+        function Messenger() {
+          _classCallCheck(this, Messenger);
+
+          this._parentStack = window.parent ? window.parent : undefined;
+          this._childStack = undefined;
+        }
+
+        _createClass(Messenger, [{
+          key: "parent",
+          get: function get() {},
+
+          /**
+          * Sets a single Parent stack as part of this Messenger framework.
+          * It allows calling functions as defined in the parent frame.
+          */
+          set: function set(value) {
+            if (!value) {
+              throw new TypeError("Messenger.parent cannot be undefined");
+            }
+
+            if (typeof value.postMessage === "function") {
+              throw new TypeError("Messenger.parent must have a .postMessage() function definition");
+            }
+
+            this._parentStack = value;
+          }
+        }, {
+          key: "child",
+          get: function get() {}
+          /**
+           * Sets a single Child stack as part of this Messenger framework.
+           * It allows calling functions as defined in the child frame.
+           */
+          ,
+          set: function set(value) {
+            if (!value) {
+              throw new TypeError("Messenger.child cannot be undefined");
+            }
+
+            if (typeof value.postMessage === "function") {
+              throw new TypeError("Messenger.child must have a .postMessage() function definition");
+            }
+
+            this._childStack = value;
+          }
+        }]);
+
+        return Messenger;
+      }();
+
+      module.exports = new Messenger();
     }, {}]
   }, {}, [1])(1);
 });
