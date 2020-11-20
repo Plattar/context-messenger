@@ -380,11 +380,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 
             return function () {
-              for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-                args[_key] = arguments[_key];
-              }
+              var _target$prop;
 
-              return target[prop].exec(args);
+              return (_target$prop = target[prop]).exec.apply(_target$prop, arguments);
             };
           },
           set: function set(target, prop, value) {
@@ -507,14 +505,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(WrappedFunction, [{
           key: "_execute",
           value: function _execute() {
-            for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-              args[_key2] = arguments[_key2];
+            for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+              args[_key] = arguments[_key];
             }
 
-            var rData = this._value(args);
+            var rData = this._value.apply(this, args);
 
             if (this._callback) {
-              this._callback(rData, args);
+              this._callback.apply(this, [rData].concat(args));
             }
 
             return rData;
@@ -529,8 +527,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           value: function exec() {
             var _this = this;
 
-            for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-              args[_key3] = arguments[_key3];
+            for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+              args[_key2] = arguments[_key2];
             }
 
             return new Promise(function (accept, reject) {
@@ -540,7 +538,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
               try {
                 // otherwise execute the function
-                return accept(_this._execute(args));
+                return accept(_this._execute.apply(_this, args));
               } catch (e) {
                 return reject(e);
               }

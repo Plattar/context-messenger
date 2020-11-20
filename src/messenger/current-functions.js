@@ -31,7 +31,7 @@ class CurrentFunctions {
 
                 // return an anonymous function that executes for this variable
                 return (...args) => {
-                    return target[prop].exec(args);
+                    return target[prop].exec(...args);
                 };
             },
             set: (target, prop, value) => {

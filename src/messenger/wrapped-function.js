@@ -13,10 +13,10 @@ class WrappedFunction {
      * executes the internally stored function with the provided arguments
      */
     _execute(...args) {
-        const rData = this._value(args);
+        const rData = this._value(...args);
 
         if (this._callback) {
-            this._callback(rData, args);
+            this._callback(rData, ...args);
         }
 
         return rData;
@@ -34,7 +34,7 @@ class WrappedFunction {
 
             try {
                 // otherwise execute the function
-                return accept(this._execute(args));
+                return accept(this._execute(...args));
             }
             catch (e) {
                 return reject(e);

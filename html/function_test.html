@@ -6,6 +6,14 @@
     <script type='text/javascript' src='./../build/es2019/plattar-context-messenger.js'></script>
     <script type='text/javascript'>
 
+        // this is called when the provided function is actually executed
+        Plattar.messenger.current.watch("my_function", (res, arg1, arg2) => {
+            console.log("my_function.watch() executed");
+            console.log("my_function.watch() arg1 is " + arg1);
+            console.log("my_function.watch() arg2 is " + arg2);
+            console.log("my_function.watch() result is " + res);
+        });
+
         // registering the function
         Plattar.messenger.current.my_function = (arg1, arg2) => {
             return arg1 + arg2;
@@ -15,6 +23,14 @@
         Plattar.messenger.current.my_function(3, 4).then((res) => {
             console.log("result of my_function is " + res);
         }).catch((err) => {
+            console.error(err)
+        });
+
+        // test for calling an undefined function accidentally
+        Plattar.messenger.current.my_undefined_function(3, 4).then((res) => {
+            console.log("result of my_undefined_function is " + res);
+        }).catch((err) => {
+            // this will fire
             console.error(err)
         });
     </script>
