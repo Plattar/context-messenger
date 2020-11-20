@@ -5,7 +5,7 @@
 class WrappedValue {
     constructor(varName, isPermanent) {
         this._value = undefined;
-        this._callback = (oldVal, newVal) => { };
+        this._callback = undefined;
         this._isPermanent = isPermanent;
         this._varName = varName;
 
