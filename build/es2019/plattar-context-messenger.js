@@ -331,6 +331,7 @@ module.exports = WrappedLocalFunction;
 },{}],8:[function(require,module,exports){
 const CurrentFunctionList = require("./current/current-function-list");
 const RemoteFunctionList = require("./remote/remote-function-list");
+const Util = require("./util/util.js");
 
 /**
  * Messenger is a singleton that allows calling functions in multiple
@@ -338,6 +339,9 @@ const RemoteFunctionList = require("./remote/remote-function-list");
  */
 class Messenger {
     constructor() {
+        // generate a unique id for this instance of the messenger
+        this._id = Util.id();
+
         this._parentStack = window.parent ? window.parent : undefined;
 
         // allow adding local functions immedietly
@@ -363,6 +367,9 @@ class Messenger {
                 evt.source.postMessage("__messenger__child_init", evt.origin || "*");
             }
             else if (data === "__messenger__child_init") {
+                console.log(evt.source);
+                console.log(evt.source[0].frameElement.name);
+                console.log(evt.source[0].frameElement.id);
                 this._parentFunctionList = new RemoteFunctionList(this._parentStack)
             }
         });
@@ -391,7 +398,7 @@ class Messenger {
 }
 
 module.exports = new Messenger();
-},{"./current/current-function-list":6,"./remote/remote-function-list":9}],9:[function(require,module,exports){
+},{"./current/current-function-list":6,"./remote/remote-function-list":9,"./util/util.js":11}],9:[function(require,module,exports){
 const WrappedFunction = require("./wrapped-remote-function");
 
 class RemoteFunctionList {
@@ -442,5 +449,15 @@ class WrappedRemoteFunction {
 }
 
 module.exports = WrappedRemoteFunction;
+},{}],11:[function(require,module,exports){
+class Util {
+
+    // generate a quick, random ID thats useful for message digests and class checks
+    static id() {
+        return Math.abs(Date.now() & Math.floor(Math.random() * 1000000000000000000));
+    }
+}
+
+module.exports = Util;
 },{}]},{},[1])(1)
 });

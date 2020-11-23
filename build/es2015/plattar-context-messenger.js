@@ -498,6 +498,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       var CurrentFunctionList = require("./current/current-function-list");
 
       var RemoteFunctionList = require("./remote/remote-function-list");
+
+      var Util = require("./util/util.js");
       /**
        * Messenger is a singleton that allows calling functions in multiple
        * contexts
@@ -508,6 +510,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         function Messenger() {
           _classCallCheck(this, Messenger);
 
+          // generate a unique id for this instance of the messenger
+          this._id = Util.id();
           this._parentStack = window.parent ? window.parent : undefined; // allow adding local functions immedietly
 
           this._currentFunctionList = new CurrentFunctionList(); // we still need to confirm if a parent exists and has the messenger
@@ -535,6 +539,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
               if (data === "__messenger__parent_init") {
                 evt.source.postMessage("__messenger__child_init", evt.origin || "*");
               } else if (data === "__messenger__child_init") {
+                console.log(evt.source);
+                console.log(evt.source[0].frameElement.name);
+                console.log(evt.source[0].frameElement.id);
                 _this2._parentFunctionList = new RemoteFunctionList(_this2._parentStack);
               }
             }); // if a parent exists, send a message calling for an initialisation
@@ -571,7 +578,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       module.exports = new Messenger();
     }, {
       "./current/current-function-list": 6,
-      "./remote/remote-function-list": 9
+      "./remote/remote-function-list": 9,
+      "./util/util.js": 11
     }],
     9: [function (require, module, exports) {
       var WrappedFunction = require("./wrapped-remote-function");
@@ -629,6 +637,25 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       };
 
       module.exports = WrappedRemoteFunction;
+    }, {}],
+    11: [function (require, module, exports) {
+      var Util = /*#__PURE__*/function () {
+        function Util() {
+          _classCallCheck(this, Util);
+        }
+
+        _createClass(Util, null, [{
+          key: "id",
+          // generate a quick, random ID thats useful for message digests and class checks
+          value: function id() {
+            return Math.abs(Date.now() & Math.floor(Math.random() * 1000000000000000000));
+          }
+        }]);
+
+        return Util;
+      }();
+
+      module.exports = Util;
     }, {}]
   }, {}, [1])(1);
 });

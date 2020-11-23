@@ -1,5 +1,6 @@
 const CurrentFunctionList = require("./current/current-function-list");
 const RemoteFunctionList = require("./remote/remote-function-list");
+const Util = require("./util/util.js");
 
 /**
  * Messenger is a singleton that allows calling functions in multiple
@@ -7,6 +8,9 @@ const RemoteFunctionList = require("./remote/remote-function-list");
  */
 class Messenger {
     constructor() {
+        // generate a unique id for this instance of the messenger
+        this._id = Util.id();
+
         this._parentStack = window.parent ? window.parent : undefined;
 
         // allow adding local functions immedietly
@@ -32,6 +36,9 @@ class Messenger {
                 evt.source.postMessage("__messenger__child_init", evt.origin || "*");
             }
             else if (data === "__messenger__child_init") {
+                console.log(evt.source);
+                console.log(evt.source[0].frameElement.name);
+                console.log(evt.source[0].frameElement.id);
                 this._parentFunctionList = new RemoteFunctionList(this._parentStack)
             }
         });
