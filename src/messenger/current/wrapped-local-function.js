@@ -1,8 +1,9 @@
 /**
- * WrappedFunction represents a container that holds and maintains a specific function
- * that can be called by any context
+ * WrappedLocalFunction represents a container that holds and maintains a specific function
+ * that was defined in the current web context. It can also be executed by other web contexts
+ * using the Messenger framework.
  */
-class WrappedFunction {
+class WrappedLocalFunction {
     constructor(funcName) {
         this._value = undefined;
         this._callback = undefined;
@@ -29,7 +30,7 @@ class WrappedFunction {
     exec(...args) {
         return new Promise((accept, reject) => {
             if (!this._value) {
-                return reject(new Error("Function with name " + this._funcName + "() is not defined"));
+                return reject(new Error("WrappedLocalFunction.exec() function with name " + this._funcName + "() is not defined"));
             }
 
             try {
@@ -47,7 +48,7 @@ class WrappedFunction {
      */
     set value(newValue) {
         if (typeof newValue !== "function") {
-            throw new TypeError("WrappedFunction.value must be a function. To store values use Plattar.memory");
+            throw new TypeError("WrappedLocalFunction.value must be a function. To store values use Plattar.memory");
         }
 
         this._value = newValue;
@@ -61,9 +62,9 @@ class WrappedFunction {
             this._callback = newValue;
         }
         else {
-            throw new TypeError("WrappedFunction.watch must be a type of function. Try using WrappedFunction.watch = (rData, ...args) => {}");
+            throw new TypeError("WrappedLocalFunction.watch must be a type of function. Try using WrappedLocalFunction.watch = (rData, ...args) => {}");
         }
     }
 }
 
-module.exports = WrappedFunction;
+module.exports = WrappedLocalFunction;
