@@ -511,8 +511,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           _classCallCheck(this, Messenger);
 
           // generate a unique id for this instance of the messenger
-          this._id = Util.id();
-          this._parentStack = window.parent ? window.parent : undefined; // allow adding local functions immedietly
+          this._id = Util.id(); // ensure the parent stack does not target itself
+
+          this._parentStack = window.parent ? this._isIframe() ? window.parent : undefined : undefined; // allow adding local functions immedietly
 
           this._currentFunctionList = new CurrentFunctionList(); // we still need to confirm if a parent exists and has the messenger
           // framework added.. see _setup() function
@@ -536,19 +537,30 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
             window.addEventListener("message", function (evt) {
               var data = evt.data;
 
-              if (data === "__messenger__parent_init") {
-                evt.source.postMessage("__messenger__child_init", evt.origin || "*");
-              } else if (data === "__messenger__child_init") {
-                console.log(evt.source);
-                console.log(evt.source[0].frameElement.name);
-                console.log(evt.source[0].frameElement.id);
-                _this2._parentFunctionList = new RemoteFunctionList(_this2._parentStack);
+              if (data === "__messenger__child_init") {
+                var iframeID = evt.source.frameElement.id; // initialise the child iframe as a messenger pipe
+
+                _this2[iframeID] = new RemoteFunctionList(evt.source);
+                evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
+              } else if (data === "__messenger__parent_init") {
+                _this2._parentFunctionList = new RemoteFunctionList(evt.source);
               }
             }); // if a parent exists, send a message calling for an initialisation
 
             if (this._parentStack) {
-              this._parentStack.postMessage("__messenger__parent_init", "*");
+              this._parentStack.postMessage("__messenger__child_init", "*");
+            } else {
+              console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined");
             }
+          }
+          /**
+           * Checks if the current Messenger is actually inside an iframe (embedded)
+           */
+
+        }, {
+          key: "_isIframe",
+          value: function _isIframe() {
+            return window.frameElement && window.frameElement.nodeName == "IFRAME";
           }
           /**
            * Allows calling functions on the parent stack. Use this if you

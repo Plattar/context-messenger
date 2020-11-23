@@ -11,7 +11,8 @@ class Messenger {
         // generate a unique id for this instance of the messenger
         this._id = Util.id();
 
-        this._parentStack = window.parent ? window.parent : undefined;
+        // ensure the parent stack does not target itself
+        this._parentStack = window.parent ? (this._isIframe() ? window.parent : undefined) : undefined;
 
         // allow adding local functions immedietly
         this._currentFunctionList = new CurrentFunctionList();
@@ -32,21 +33,33 @@ class Messenger {
         window.addEventListener("message", (evt) => {
             const data = evt.data;
 
-            if (data === "__messenger__parent_init") {
-                evt.source.postMessage("__messenger__child_init", evt.origin || "*");
+            if (data === "__messenger__child_init") {
+                const iframeID = evt.source.frameElement.id;
+
+                // initialise the child iframe as a messenger pipe
+                this[iframeID] = new RemoteFunctionList(evt.source);
+
+                evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
             }
-            else if (data === "__messenger__child_init") {
-                console.log(evt.source);
-                console.log(evt.source[0].frameElement.name);
-                console.log(evt.source[0].frameElement.id);
-                this._parentFunctionList = new RemoteFunctionList(this._parentStack)
+            else if (data === "__messenger__parent_init") {
+                this._parentFunctionList = new RemoteFunctionList(evt.source);
             }
         });
 
         // if a parent exists, send a message calling for an initialisation
         if (this._parentStack) {
-            this._parentStack.postMessage("__messenger__parent_init", "*");
+            this._parentStack.postMessage("__messenger__child_init", "*");
         }
+        else {
+            console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined");
+        }
+    }
+
+    /**
+     * Checks if the current Messenger is actually inside an iframe (embedded)
+     */
+    _isIframe() {
+        return window.frameElement && window.frameElement.nodeName == "IFRAME";
     }
 
     /**

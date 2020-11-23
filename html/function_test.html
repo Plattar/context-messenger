@@ -4,15 +4,18 @@
 <head>
     <title>Function Test</title>
     <script type='text/javascript' src='../build/es2019/plattar-context-messenger.js'></script>
-    <script type='text/javascript'>
-    // todo
-    </script>
 </head>
 
 <body>
     <p>This is the Main Frame</p>
-    <iframe id="plattar_frame_id" name="plattar_frame_name" src="./function_test_nested.html"
-        title="nested iframe"></iframe>
+    <iframe id="plattar_frame_1" src="./function_test_nested.html" title="nested iframe 1"></iframe>
+    <iframe id="plattar_frame_2" src="./function_test_nested.html" title="nested iframe 2"></iframe>
+    <iframe id="plattar_frame_3" src="./function_test_nested.html" title="nested iframe 1"></iframe>
+    <iframe id="plattar_frame_4" src="./function_test_nested.html" title="nested iframe 1"></iframe>
+
+    <script type='text/javascript'>
+        console.log("done");
+    </script>
 </body>
 
 </html>
