@@ -1,4 +1,4 @@
-const CurrentFunctions = require("./current-functions");
+const CurrentFunctionList = require("./current/current-function-list");
 
 /**
  * Messenger is a singleton that allows calling functions in multiple
@@ -9,7 +9,7 @@ class Messenger {
         this._parentStack = window.parent ? window.parent : undefined;
         this._childStack = undefined;
 
-        this._currentFunctions = new CurrentFunctions();
+        this._currentFunctionList = new CurrentFunctionList();
     }
 
     /**
@@ -24,8 +24,8 @@ class Messenger {
      * The current stack is the current context. This is primarily used to
      * define functions that exist on the current stack.
      */
-    get current() {
-        return this._currentFunctions;
+    get self() {
+        return this._currentFunctionList;
     }
 
     /**

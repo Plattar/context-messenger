@@ -1,6 +1,6 @@
 const WrappedFunction = require("./wrapped-function");
 
-class CurrentFunctions {
+class CurrentFunctionList {
     constructor() {
         return new Proxy({}, {
             get: (target, prop, receiver) => {
@@ -47,4 +47,4 @@ class CurrentFunctions {
     }
 }
 
-module.exports = CurrentFunctions;
+module.exports = CurrentFunctionList;
