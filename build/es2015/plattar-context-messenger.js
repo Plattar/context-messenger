@@ -529,12 +529,17 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
             // if this message is recieved, then let the messenger know to
             // initialise the child object
-            window.addEventListener("__messenger__parent_init", function (evt) {
-              evt.source.postMessage("__messenger__child_init", evt.origin);
-            }); // if this message is recieved, initialise the parent object
+            window.addEventListener("message", function (evt) {
+              var data = evt.data;
 
-            window.addEventListener("__messenger__child_init", function (evt) {
-              _this2._parentFunctionList = new RemoteFunctionList(_this2._parentStack);
+              if (data === "__messenger__parent_init") {
+                console.log(evt);
+                console.log(evt.source);
+                evt.source.postMessage("__messenger__child_init", evt.origin || "*");
+              } else if (data === "__messenger__child_init") {
+                console.log("__messenger__child_init");
+                _this2._parentFunctionList = new RemoteFunctionList(_this2._parentStack);
+              }
             }); // if a parent exists, send a message calling for an initialisation
 
             if (this._parentStack) {

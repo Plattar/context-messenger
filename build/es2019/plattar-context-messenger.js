@@ -356,13 +356,17 @@ class Messenger {
     _setup() {
         // if this message is recieved, then let the messenger know to
         // initialise the child object
-        window.addEventListener("__messenger__parent_init", (evt) => {
-            evt.source.postMessage("__messenger__child_init", evt.origin);
-        });
-
-        // if this message is recieved, initialise the parent object
-        window.addEventListener("__messenger__child_init", (evt) => {
-            this._parentFunctionList = new RemoteFunctionList(this._parentStack)
+        window.addEventListener("message", (evt) => {
+            const data = evt.data;
+            if (data === "__messenger__parent_init") {
+                console.log(evt);
+                console.log(evt.source);
+                evt.source.postMessage("__messenger__child_init", evt.origin || "*");
+            }
+            else if (data === "__messenger__child_init") {
+                console.log("__messenger__child_init");
+                this._parentFunctionList = new RemoteFunctionList(this._parentStack)
+            }
         });
 
         // if a parent exists, send a message calling for an initialisation
