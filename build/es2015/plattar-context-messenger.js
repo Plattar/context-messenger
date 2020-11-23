@@ -72,17 +72,17 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     1: [function (require, module, exports) {
       "use strict";
 
-      var memory = require("./memory/memory.js");
-
       var messenger = require("./messenger/messenger.js");
 
+      var memory = require("./memory/memory.js");
+
       module.exports = {
-        memory: memory,
-        messenger: messenger
+        messenger: messenger,
+        memory: memory
       };
     }, {
       "./memory/memory.js": 2,
-      "./messenger/messenger.js": 7
+      "./messenger/messenger.js": 8
     }],
     2: [function (require, module, exports) {
       var PermanentMemory = require("./permanent-memory");
@@ -336,10 +336,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       module.exports = WrappedValue;
     }, {}],
     6: [function (require, module, exports) {
-      var WrappedFunction = require("./wrapped-function");
+      var WrappedFunction = require("./wrapped-local-function");
 
-      var CurrentFunctions = function CurrentFunctions() {
-        _classCallCheck(this, CurrentFunctions);
+      var CurrentFunctionList = function CurrentFunctionList() {
+        _classCallCheck(this, CurrentFunctionList);
 
         return new Proxy({}, {
           get: function get(target, prop, receiver) {
@@ -396,102 +396,19 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         });
       };
 
-      module.exports = CurrentFunctions;
+      module.exports = CurrentFunctionList;
     }, {
-      "./wrapped-function": 8
+      "./wrapped-local-function": 7
     }],
     7: [function (require, module, exports) {
-      var CurrentFunctions = require("./current-functions");
       /**
-       * Messenger is a singleton that allows calling functions in multiple
-       * contexts
+       * WrappedLocalFunction represents a container that holds and maintains a specific function
+       * that was defined in the current web context. It can also be executed by other web contexts
+       * using the Messenger framework.
        */
-
-
-      var Messenger = /*#__PURE__*/function () {
-        function Messenger() {
-          _classCallCheck(this, Messenger);
-
-          this._parentStack = window.parent ? window.parent : undefined;
-          this._childStack = undefined;
-          this._currentFunctions = new CurrentFunctions();
-        }
-        /**
-         * Allows calling functions on the parent stack. Use this if you
-         * are inside the iframe and want to call functions on the parent page.
-         */
-
-
-        _createClass(Messenger, [{
-          key: "parent",
-          get: function get() {}
-          /**
-           * The current stack is the current context. This is primarily used to
-           * define functions that exist on the current stack.
-           */
-          ,
-
-          /**
-          * Sets a single Parent stack as part of this Messenger framework.
-          * It allows calling functions as defined in the parent frame.
-          */
-          set: function set(value) {
-            if (!value) {
-              throw new TypeError("Messenger.parent cannot be undefined");
-            }
-
-            if (typeof value.postMessage === "function") {
-              throw new TypeError("Messenger.parent must have a .postMessage() function definition");
-            }
-
-            this._parentStack = value;
-          }
-        }, {
-          key: "current",
-          get: function get() {
-            return this._currentFunctions;
-          }
-          /**
-          * Allows calling functions on the child stack. Use this if you
-          * want to call functions defined inside of an iframe
-          */
-
-        }, {
-          key: "child",
-          get: function get() {}
-          /**
-           * Sets a single Child stack as part of this Messenger framework.
-           * It allows calling functions as defined in the child frame.
-           */
-          ,
-          set: function set(value) {
-            if (!value) {
-              throw new TypeError("Messenger.child cannot be undefined");
-            }
-
-            if (typeof value.postMessage === "function") {
-              throw new TypeError("Messenger.child must have a .postMessage() function definition");
-            }
-
-            this._childStack = value;
-          }
-        }]);
-
-        return Messenger;
-      }();
-
-      module.exports = new Messenger();
-    }, {
-      "./current-functions": 6
-    }],
-    8: [function (require, module, exports) {
-      /**
-       * WrappedFunction represents a container that holds and maintains a specific function
-       * that can be called by any context
-       */
-      var WrappedFunction = /*#__PURE__*/function () {
-        function WrappedFunction(funcName) {
-          _classCallCheck(this, WrappedFunction);
+      var WrappedLocalFunction = /*#__PURE__*/function () {
+        function WrappedLocalFunction(funcName) {
+          _classCallCheck(this, WrappedLocalFunction);
 
           this._value = undefined;
           this._callback = undefined;
@@ -502,7 +419,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
          */
 
 
-        _createClass(WrappedFunction, [{
+        _createClass(WrappedLocalFunction, [{
           key: "_execute",
           value: function _execute() {
             for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -533,7 +450,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
             return new Promise(function (accept, reject) {
               if (!_this._value) {
-                return reject(new Error("Function with name " + _this._funcName + "() is not defined"));
+                return reject(new Error("WrappedLocalFunction.exec() function with name " + _this._funcName + "() is not defined"));
               }
 
               try {
@@ -552,7 +469,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           key: "value",
           set: function set(newValue) {
             if (typeof newValue !== "function") {
-              throw new TypeError("WrappedFunction.value must be a function. To store values use Plattar.memory");
+              throw new TypeError("WrappedLocalFunction.value must be a function. To store values use Plattar.memory");
             }
 
             this._value = newValue;
@@ -567,15 +484,149 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
             if (typeof newValue === "function") {
               this._callback = newValue;
             } else {
-              throw new TypeError("WrappedFunction.watch must be a type of function. Try using WrappedFunction.watch = (rData, ...args) => {}");
+              throw new TypeError("WrappedLocalFunction.watch must be a type of function. Try using WrappedLocalFunction.watch = (rData, ...args) => {}");
             }
           }
         }]);
 
-        return WrappedFunction;
+        return WrappedLocalFunction;
       }();
 
-      module.exports = WrappedFunction;
+      module.exports = WrappedLocalFunction;
+    }, {}],
+    8: [function (require, module, exports) {
+      var CurrentFunctionList = require("./current/current-function-list");
+
+      var RemoteFunctionList = require("./remote/remote-function-list");
+      /**
+       * Messenger is a singleton that allows calling functions in multiple
+       * contexts
+       */
+
+
+      var Messenger = /*#__PURE__*/function () {
+        function Messenger() {
+          _classCallCheck(this, Messenger);
+
+          this._parentStack = window.parent ? window.parent : undefined; // allow adding local functions immedietly
+
+          this._currentFunctionList = new CurrentFunctionList(); // we still need to confirm if a parent exists and has the messenger
+          // framework added.. see _setup() function
+
+          this._parentFunctionList = undefined;
+
+          this._setup();
+        }
+        /**
+         * Internal function call to initialise the messenger framework
+         */
+
+
+        _createClass(Messenger, [{
+          key: "_setup",
+          value: function _setup() {
+            var _this2 = this;
+
+            // if this message is recieved, then let the messenger know to
+            // initialise the child object
+            window.addEventListener("__messenger__parent_init", function (evt) {
+              evt.source.postMessage("__messenger__child_init", evt.origin);
+            }); // if this message is recieved, initialise the parent object
+
+            window.addEventListener("__messenger__child_init", function (evt) {
+              _this2._parentFunctionList = new RemoteFunctionList(_this2._parentStack);
+            }); // if a parent exists, send a message calling for an initialisation
+
+            if (this._parentStack) {
+              this._parentStack.postMessage("__messenger__parent_init", "*");
+            }
+          }
+          /**
+           * Allows calling functions on the parent stack. Use this if you
+           * are inside the iframe and want to call functions on the parent page.
+           */
+
+        }, {
+          key: "parent",
+          get: function get() {
+            return this._parentFunctionList;
+          }
+          /**
+           * The current stack is the current context. This is primarily used to
+           * define functions that exist on the current stack.
+           */
+
+        }, {
+          key: "self",
+          get: function get() {
+            return this._currentFunctionList;
+          }
+        }]);
+
+        return Messenger;
+      }();
+
+      module.exports = new Messenger();
+    }, {
+      "./current/current-function-list": 6,
+      "./remote/remote-function-list": 9
+    }],
+    9: [function (require, module, exports) {
+      var WrappedFunction = require("./wrapped-remote-function");
+
+      var RemoteFunctionList = function RemoteFunctionList() {
+        _classCallCheck(this, RemoteFunctionList);
+
+        return new Proxy({}, {
+          get: function get(target, prop, receiver) {
+            // sets the watcher callback
+            if (prop === "watch") {
+              throw new Error("RemoteFunctionList.watch cannot watch execution of remote functions from current context. Did you mean to use Plattar.messenger.self instead?");
+            } // clears everything, including specific items
+
+
+            if (prop === "clear") {
+              throw new Error("RemoteFunctionList.clear cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.clear() instead?");
+            } // clears everything, including specific items
+
+
+            if (prop === "purge") {
+              throw new Error("RemoteFunctionList.purge cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.purge() instead?");
+            } // on first access, we create a WrappedValue type
+
+
+            if (!target[prop]) {
+              target[prop] = new WrappedFunction(prop);
+            } // return an anonymous function that executes for this variable
+
+
+            return function () {
+              var _target$prop2;
+
+              return (_target$prop2 = target[prop]).exec.apply(_target$prop2, arguments);
+            };
+          },
+          set: function set(target, prop, value) {
+            throw new Error("RemoteFunctionList.set cannot add a remote function from current context. Use Plattar.messenger.self instead");
+          }
+        });
+      };
+
+      module.exports = RemoteFunctionList;
+    }, {
+      "./wrapped-remote-function": 10
+    }],
+    10: [function (require, module, exports) {
+      /**
+       * WrappedRemoteFunction represents a container that holds and maintains a specific function
+       * that can be called by any context. This particular container executes and handles remote 
+       * function calls.
+       */
+      var WrappedRemoteFunction = function WrappedRemoteFunction() {
+        _classCallCheck(this, WrappedRemoteFunction);
+      };
+
+      module.exports = WrappedRemoteFunction;
     }, {}]
   }, {}, [1])(1);
 });

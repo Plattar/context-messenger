@@ -1,13 +1,13 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Plattar = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
-const memory = require("./memory/memory.js");
 const messenger = require("./messenger/messenger.js");
+const memory = require("./memory/memory.js");
 
 module.exports = {
-    memory,
-    messenger
+    messenger,
+    memory
 }
-},{"./memory/memory.js":2,"./messenger/messenger.js":7}],2:[function(require,module,exports){
+},{"./memory/memory.js":2,"./messenger/messenger.js":8}],2:[function(require,module,exports){
 const PermanentMemory = require("./permanent-memory");
 const TemporaryMemory = require("./temporary-memory");
 
@@ -207,9 +207,9 @@ class WrappedValue {
 
 module.exports = WrappedValue;
 },{}],6:[function(require,module,exports){
-const WrappedFunction = require("./wrapped-function");
+const WrappedFunction = require("./wrapped-local-function");
 
-class CurrentFunctions {
+class CurrentFunctionList {
     constructor() {
         return new Proxy({}, {
             get: (target, prop, receiver) => {
@@ -256,86 +256,14 @@ class CurrentFunctions {
     }
 }
 
-module.exports = CurrentFunctions;
-},{"./wrapped-function":8}],7:[function(require,module,exports){
-const CurrentFunctions = require("./current-functions");
-
+module.exports = CurrentFunctionList;
+},{"./wrapped-local-function":7}],7:[function(require,module,exports){
 /**
- * Messenger is a singleton that allows calling functions in multiple
- * contexts
+ * WrappedLocalFunction represents a container that holds and maintains a specific function
+ * that was defined in the current web context. It can also be executed by other web contexts
+ * using the Messenger framework.
  */
-class Messenger {
-    constructor() {
-        this._parentStack = window.parent ? window.parent : undefined;
-        this._childStack = undefined;
-
-        this._currentFunctions = new CurrentFunctions();
-    }
-
-    /**
-     * Allows calling functions on the parent stack. Use this if you
-     * are inside the iframe and want to call functions on the parent page.
-     */
-    get parent() {
-
-    }
-
-    /**
-     * The current stack is the current context. This is primarily used to
-     * define functions that exist on the current stack.
-     */
-    get current() {
-        return this._currentFunctions;
-    }
-
-    /**
-    * Allows calling functions on the child stack. Use this if you
-    * want to call functions defined inside of an iframe
-    */
-    get child() {
-
-    }
-
-    /**
-     * Sets a single Child stack as part of this Messenger framework.
-     * It allows calling functions as defined in the child frame.
-     */
-    set child(value) {
-        if (!value) {
-            throw new TypeError("Messenger.child cannot be undefined");
-        }
-
-        if (typeof value.postMessage === "function") {
-            throw new TypeError("Messenger.child must have a .postMessage() function definition");
-        }
-
-        this._childStack = value;
-    }
-
-    /**
-    * Sets a single Parent stack as part of this Messenger framework.
-    * It allows calling functions as defined in the parent frame.
-    */
-    set parent(value) {
-        if (!value) {
-            throw new TypeError("Messenger.parent cannot be undefined");
-        }
-
-        if (typeof value.postMessage === "function") {
-            throw new TypeError("Messenger.parent must have a .postMessage() function definition");
-        }
-
-        this._parentStack = value;
-    }
-}
-
-module.exports = new Messenger();
-},{"./current-functions":6}],8:[function(require,module,exports){
-/**
- * WrappedFunction represents a container that holds and maintains a specific function
- * that can be called by any context
- */
-class WrappedFunction {
+class WrappedLocalFunction {
     constructor(funcName) {
         this._value = undefined;
         this._callback = undefined;
@@ -362,7 +290,7 @@ class WrappedFunction {
     exec(...args) {
         return new Promise((accept, reject) => {
             if (!this._value) {
-                return reject(new Error("Function with name " + this._funcName + "() is not defined"));
+                return reject(new Error("WrappedLocalFunction.exec() function with name " + this._funcName + "() is not defined"));
             }
 
             try {
@@ -380,7 +308,7 @@ class WrappedFunction {
      */
     set value(newValue) {
         if (typeof newValue !== "function") {
-            throw new TypeError("WrappedFunction.value must be a function. To store values use Plattar.memory");
+            throw new TypeError("WrappedLocalFunction.value must be a function. To store values use Plattar.memory");
         }
 
         this._value = newValue;
@@ -394,11 +322,123 @@ class WrappedFunction {
             this._callback = newValue;
         }
         else {
-            throw new TypeError("WrappedFunction.watch must be a type of function. Try using WrappedFunction.watch = (rData, ...args) => {}");
+            throw new TypeError("WrappedLocalFunction.watch must be a type of function. Try using WrappedLocalFunction.watch = (rData, ...args) => {}");
         }
     }
 }
 
-module.exports = WrappedFunction;
+module.exports = WrappedLocalFunction;
+},{}],8:[function(require,module,exports){
+const CurrentFunctionList = require("./current/current-function-list");
+const RemoteFunctionList = require("./remote/remote-function-list");
+
+/**
+ * Messenger is a singleton that allows calling functions in multiple
+ * contexts
+ */
+class Messenger {
+    constructor() {
+        this._parentStack = window.parent ? window.parent : undefined;
+
+        // allow adding local functions immedietly
+        this._currentFunctionList = new CurrentFunctionList();
+
+        // we still need to confirm if a parent exists and has the messenger
+        // framework added.. see _setup() function
+        this._parentFunctionList = undefined;
+
+        this._setup();
+    }
+
+    /**
+     * Internal function call to initialise the messenger framework
+     */
+    _setup() {
+        // if this message is recieved, then let the messenger know to
+        // initialise the child object
+        window.addEventListener("__messenger__parent_init", (evt) => {
+            evt.source.postMessage("__messenger__child_init", evt.origin);
+        });
+
+        // if this message is recieved, initialise the parent object
+        window.addEventListener("__messenger__child_init", (evt) => {
+            this._parentFunctionList = new RemoteFunctionList(this._parentStack)
+        });
+
+        // if a parent exists, send a message calling for an initialisation
+        if (this._parentStack) {
+            this._parentStack.postMessage("__messenger__parent_init", "*");
+        }
+    }
+
+    /**
+     * Allows calling functions on the parent stack. Use this if you
+     * are inside the iframe and want to call functions on the parent page.
+     */
+    get parent() {
+        return this._parentFunctionList;
+    }
+
+    /**
+     * The current stack is the current context. This is primarily used to
+     * define functions that exist on the current stack.
+     */
+    get self() {
+        return this._currentFunctionList;
+    }
+}
+
+module.exports = new Messenger();
+},{"./current/current-function-list":6,"./remote/remote-function-list":9}],9:[function(require,module,exports){
+const WrappedFunction = require("./wrapped-remote-function");
+
+class RemoteFunctionList {
+    constructor() {
+        return new Proxy({}, {
+            get: (target, prop, receiver) => {
+                // sets the watcher callback
+                if (prop === "watch") {
+                    throw new Error("RemoteFunctionList.watch cannot watch execution of remote functions from current context. Did you mean to use Plattar.messenger.self instead?");
+                }
+
+                // clears everything, including specific items
+                if (prop === "clear") {
+                    throw new Error("RemoteFunctionList.clear cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.clear() instead?");
+                }
+
+                // clears everything, including specific items
+                if (prop === "purge") {
+                    throw new Error("RemoteFunctionList.purge cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.purge() instead?");
+                }
+
+                // on first access, we create a WrappedValue type
+                if (!target[prop]) {
+                    target[prop] = new WrappedFunction(prop);
+                }
+
+                // return an anonymous function that executes for this variable
+                return (...args) => {
+                    return target[prop].exec(...args);
+                };
+            },
+            set: (target, prop, value) => {
+                throw new Error("RemoteFunctionList.set cannot add a remote function from current context. Use Plattar.messenger.self instead");
+            }
+        });
+    }
+}
+
+module.exports = RemoteFunctionList;
+},{"./wrapped-remote-function":10}],10:[function(require,module,exports){
+/**
+ * WrappedRemoteFunction represents a container that holds and maintains a specific function
+ * that can be called by any context. This particular container executes and handles remote 
+ * function calls.
+ */
+class WrappedRemoteFunction {
+
+}
+
+module.exports = WrappedRemoteFunction;
 },{}]},{},[1])(1)
 });
