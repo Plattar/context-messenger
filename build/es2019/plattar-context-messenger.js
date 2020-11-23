@@ -358,13 +358,11 @@ class Messenger {
         // initialise the child object
         window.addEventListener("message", (evt) => {
             const data = evt.data;
+
             if (data === "__messenger__parent_init") {
-                console.log(evt);
-                console.log(evt.source);
                 evt.source.postMessage("__messenger__child_init", evt.origin || "*");
             }
             else if (data === "__messenger__child_init") {
-                console.log("__messenger__child_init");
                 this._parentFunctionList = new RemoteFunctionList(this._parentStack)
             }
         });

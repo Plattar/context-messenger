@@ -533,11 +533,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
               var data = evt.data;
 
               if (data === "__messenger__parent_init") {
-                console.log(evt);
-                console.log(evt.source);
                 evt.source.postMessage("__messenger__child_init", evt.origin || "*");
               } else if (data === "__messenger__child_init") {
-                console.log("__messenger__child_init");
                 _this2._parentFunctionList = new RemoteFunctionList(_this2._parentStack);
               }
             }); // if a parent exists, send a message calling for an initialisation
