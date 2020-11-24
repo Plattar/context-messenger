@@ -40,12 +40,11 @@ class Messenger {
                     };
                 }
 
-                if (prop === "id") {
-                    return target._id;
-                }
-
-                if (prop === "self") {
-                    return this._currentFunctionList;
+                switch (prop) {
+                    case "id": return target._id;
+                    case "self": return target._currentFunctionList;
+                    default:
+                        break;
                 }
 
                 const targetVar = target[prop];
@@ -90,7 +89,10 @@ class Messenger {
                     this[iframeID] = new RemoteFunctionList(iframeID);
                 }
 
-                this[iframeID].setup(evt.source);
+                this[iframeID].setup({
+                    source: evt.source,
+                    origin: evt.origin
+                });
 
                 evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
             }
@@ -99,7 +101,10 @@ class Messenger {
                     this["parent"] = new RemoteFunctionList("parent");
                 }
 
-                this["parent"].setup(evt.source);
+                this["parent"].setup({
+                    source: evt.source,
+                    origin: evt.origin
+                });
             }
         });
 

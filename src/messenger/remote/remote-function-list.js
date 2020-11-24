@@ -39,7 +39,7 @@ class RemoteFunctionList {
 
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
-                    target[prop] = new WrappedFunction(prop);
+                    target[prop] = new WrappedFunction(prop, target._remoteInterface);
                 }
 
                 // return an anonymous function that executes for this variable
@@ -60,7 +60,7 @@ class RemoteFunctionList {
     }
 
     setup(remoteInterface) {
-        if (typeof remoteInterface.postMessage !== 'function') {
+        if (!remoteInterface.source || typeof remoteInterface.source.postMessage !== 'function') {
             throw new Error("RemoteFunctionList.setup() provided invalid interface");
         }
 

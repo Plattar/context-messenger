@@ -508,8 +508,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       var Messenger = /*#__PURE__*/function () {
         function Messenger() {
-          var _this2 = this;
-
           _classCallCheck(this, Messenger);
 
           // generate a unique id for this instance of the messenger
@@ -541,12 +539,15 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                 };
               }
 
-              if (prop === "id") {
-                return target._id;
-              }
+              switch (prop) {
+                case "id":
+                  return target._id;
 
-              if (prop === "self") {
-                return _this2._currentFunctionList;
+                case "self":
+                  return target._currentFunctionList;
+
+                default:
+                  break;
               }
 
               var targetVar = target[prop]; // return undefined if target variable doesn't exist
@@ -568,7 +569,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(Messenger, [{
           key: "_setup",
           value: function _setup() {
-            var _this3 = this;
+            var _this2 = this;
 
             // if this message is recieved, then let the messenger know to
             // initialise the child object
@@ -579,31 +580,37 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                 var iframeID = evt.source.frameElement.id;
 
                 if (iframeID === "self") {
-                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
+                  throw new Error("Messenger[" + _this2._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
                 }
 
                 if (iframeID === "parent") {
-                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"parent\" cannot be used as keyword is reserved");
+                  throw new Error("Messenger[" + _this2._id + "].setup() Component ID of \"parent\" cannot be used as keyword is reserved");
                 }
 
                 if (iframeID === "id") {
-                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"id\" cannot be used as keyword is reserved");
+                  throw new Error("Messenger[" + _this2._id + "].setup() Component ID of \"id\" cannot be used as keyword is reserved");
                 } // initialise the child iframe as a messenger pipe
 
 
-                if (!_this3[iframeID]) {
-                  _this3[iframeID] = new RemoteFunctionList(iframeID);
+                if (!_this2[iframeID]) {
+                  _this2[iframeID] = new RemoteFunctionList(iframeID);
                 }
 
-                _this3[iframeID].setup(evt.source);
+                _this2[iframeID].setup({
+                  source: evt.source,
+                  origin: evt.origin
+                });
 
                 evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
               } else if (data === "__messenger__parent_init") {
-                if (!_this3["parent"]) {
-                  _this3["parent"] = new RemoteFunctionList("parent");
+                if (!_this2["parent"]) {
+                  _this2["parent"] = new RemoteFunctionList("parent");
                 }
 
-                _this3["parent"].setup(evt.source);
+                _this2["parent"].setup({
+                  source: evt.source,
+                  origin: evt.origin
+                });
               }
             }); // if a parent exists, send a message calling for an initialisation
 
@@ -675,7 +682,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 
               if (!target[prop]) {
-                target[prop] = new WrappedFunction(prop);
+                target[prop] = new WrappedFunction(prop, target._remoteInterface);
               } // return an anonymous function that executes for this variable
 
 
@@ -699,7 +706,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(RemoteFunctionList, [{
           key: "setup",
           value: function setup(remoteInterface) {
-            if (typeof remoteInterface.postMessage !== 'function') {
+            if (!remoteInterface.source || typeof remoteInterface.source.postMessage !== 'function') {
               throw new Error("RemoteFunctionList.setup() provided invalid interface");
             }
 
@@ -733,17 +740,75 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       "./wrapped-remote-function": 10
     }],
     10: [function (require, module, exports) {
+      var Util = require("../util/util");
       /**
        * WrappedRemoteFunction represents a container that holds and maintains a specific function
        * that can be called by any context. This particular container executes and handles remote 
        * function calls.
        */
-      var WrappedRemoteFunction = function WrappedRemoteFunction() {
-        _classCallCheck(this, WrappedRemoteFunction);
-      };
+
+
+      var WrappedRemoteFunction = /*#__PURE__*/function () {
+        function WrappedRemoteFunction(funcName, remoteInterface) {
+          _classCallCheck(this, WrappedRemoteFunction);
+
+          this._funcName = funcName;
+          this._remoteInterface = remoteInterface;
+          this._callInstances = {}; // listen for execution callbacks
+
+          window.addEventListener("message", function (evt) {
+            var data = evt.data;
+          });
+        }
+        /**
+         * Executes a remote function that lays outside of the current context
+         */
+
+
+        _createClass(WrappedRemoteFunction, [{
+          key: "exec",
+          value: function exec() {
+            var instanceID = Util.id();
+
+            for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+              args[_key3] = arguments[_key3];
+            }
+
+            var compiledData = {
+              event: "__messenger__exec_fnc",
+              data: {
+                instance_id: instanceID,
+                function_name: this._funcName,
+                function_args: args
+              }
+            }; // ensure this instance ID has not been added previously
+            // NOTE: This should not ever be executed as all instance ID's are unique
+            // If this executes then the PRNG scheme needs to be swapped
+
+            if (this._callInstances[instanceID]) {
+              return new Promise(function (accept, reject) {
+                return reject(new Error("WrappedRemoteFunction.exec() cannot execute function. System generated duplicate Instance ID. PRNG needs checking"));
+              });
+            } // add this call as a unique instance and save the Promise
+            // to be executed later
+
+
+            var promise = new Promise();
+            this._callInstances[instanceID] = promise; // execute this event in another context
+
+            this._remoteInterface.source.postMessage(JSON.stringify(compiledData), this._remoteInterface.origin);
+
+            return promise;
+          }
+        }]);
+
+        return WrappedRemoteFunction;
+      }();
 
       module.exports = WrappedRemoteFunction;
-    }, {}],
+    }, {
+      "../util/util": 11
+    }],
     11: [function (require, module, exports) {
       var Util = /*#__PURE__*/function () {
         function Util() {
@@ -754,7 +819,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           key: "id",
           // generate a quick, random ID thats useful for message digests and class checks
           value: function id() {
-            return Math.abs(Date.now() & Math.floor(Math.random() * 1000000000000000000));
+            return Math.abs(Math.floor(Math.random() * 10000000000000));
           }
         }]);
 

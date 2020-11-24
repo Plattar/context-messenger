@@ -371,12 +371,11 @@ class Messenger {
                     };
                 }
 
-                if (prop === "id") {
-                    return target._id;
-                }
-
-                if (prop === "self") {
-                    return this._currentFunctionList;
+                switch (prop) {
+                    case "id": return target._id;
+                    case "self": return target._currentFunctionList;
+                    default:
+                        break;
                 }
 
                 const targetVar = target[prop];
@@ -421,7 +420,10 @@ class Messenger {
                     this[iframeID] = new RemoteFunctionList(iframeID);
                 }
 
-                this[iframeID].setup(evt.source);
+                this[iframeID].setup({
+                    source: evt.source,
+                    origin: evt.origin
+                });
 
                 evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
             }
@@ -430,7 +432,10 @@ class Messenger {
                     this["parent"] = new RemoteFunctionList("parent");
                 }
 
-                this["parent"].setup(evt.source);
+                this["parent"].setup({
+                    source: evt.source,
+                    origin: evt.origin
+                });
             }
         });
 
@@ -494,7 +499,7 @@ class RemoteFunctionList {
 
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
-                    target[prop] = new WrappedFunction(prop);
+                    target[prop] = new WrappedFunction(prop, target._remoteInterface);
                 }
 
                 // return an anonymous function that executes for this variable
@@ -515,7 +520,7 @@ class RemoteFunctionList {
     }
 
     setup(remoteInterface) {
-        if (typeof remoteInterface.postMessage !== 'function') {
+        if (!remoteInterface.source || typeof remoteInterface.source.postMessage !== 'function') {
             throw new Error("RemoteFunctionList.setup() provided invalid interface");
         }
 
@@ -541,22 +546,70 @@ class RemoteFunctionList {
 
 module.exports = RemoteFunctionList;
 },{"./wrapped-remote-function":10}],10:[function(require,module,exports){
+const Util = require("../util/util");
+
 /**
  * WrappedRemoteFunction represents a container that holds and maintains a specific function
  * that can be called by any context. This particular container executes and handles remote 
  * function calls.
  */
 class WrappedRemoteFunction {
+    constructor(funcName, remoteInterface) {
+        this._funcName = funcName;
+        this._remoteInterface = remoteInterface;
 
+        this._callInstances = {};
+
+        // listen for execution callbacks
+        window.addEventListener("message", (evt) => {
+            const data = evt.data;
+        });
+    }
+
+    /**
+     * Executes a remote function that lays outside of the current context
+     */
+    exec(...args) {
+        const instanceID = Util.id();
+
+        const compiledData = {
+            event: "__messenger__exec_fnc",
+            data: {
+                instance_id: instanceID,
+                function_name: this._funcName,
+                function_args: args
+            }
+        };
+
+        // ensure this instance ID has not been added previously
+        // NOTE: This should not ever be executed as all instance ID's are unique
+        // If this executes then the PRNG scheme needs to be swapped
+        if (this._callInstances[instanceID]) {
+            return new Promise((accept, reject) => {
+                return reject(new Error("WrappedRemoteFunction.exec() cannot execute function. System generated duplicate Instance ID. PRNG needs checking"));
+            });
+        }
+
+        // add this call as a unique instance and save the Promise
+        // to be executed later
+        const promise = new Promise();
+
+        this._callInstances[instanceID] = promise;
+
+        // execute this event in another context
+        this._remoteInterface.source.postMessage(JSON.stringify(compiledData), this._remoteInterface.origin);
+
+        return promise;
+    }
 }
 
 module.exports = WrappedRemoteFunction;
-},{}],11:[function(require,module,exports){
+},{"../util/util":11}],11:[function(require,module,exports){
 class Util {
 
     // generate a quick, random ID thats useful for message digests and class checks
     static id() {
-        return Math.abs(Date.now() & Math.floor(Math.random() * 1000000000000000000));
+        return Math.abs(Math.floor(Math.random() * 10000000000000));
     }
 }
 
