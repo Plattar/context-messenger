@@ -66,11 +66,27 @@ class Messenger {
      * Internal function call to initialise the messenger framework
      */
     _setup() {
+        this._registerListeners();
+
+        // if a parent exists, send a message calling for an initialisation
+        if (this._parentStack) {
+            this._parentStack.send("__messenger__child_init");
+        }
+        else {
+            console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined");
+        }
+    }
+
+    /**
+     * Register all critical listener interfaces so the framework can function correctly
+     */
+    _registerListeners() {
         global.default().listen("__messenger__child_init", (src, data) => {
             const iframeID = src.id;
 
             // check reserved key list
             switch (iframeID) {
+                case undefined: throw new Error("Messenger[" + this._id + "].setup() Component ID cannot be undefined");
                 case "self": throw new Error("Messenger[" + this._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
                 case "parent": throw new Error("Messenger[" + this._id + "].setup() Component ID of \"parent\" cannot be used as the keyword is reserved");
                 case "id": throw new Error("Messenger[" + this._id + "].setup() Component ID of \"id\" cannot be used as the keyword is reserved");
@@ -97,13 +113,30 @@ class Messenger {
             this["parent"].setup(new RemoteInterface(src.source, src.origin));
         });
 
-        // if a parent exists, send a message calling for an initialisation
-        if (this._parentStack) {
-            this._parentStack.send("__messenger__child_init");
-        }
-        else {
-            console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined");
-        }
+        // this listener will fire remotely to execute a function in the current
+        // context
+        global.default().listen("__messenger__exec_fnc", (src, data) => {
+            const instanceID = data.instance_id;
+            const args = data.function_args;
+            const fname = data.function_name;
+
+            // using JS reflection, execute the local function
+            this.self[fname](...args).then((res) => {
+                src.send("__messenger__exec_fnc_result", {
+                    function_status: "success",
+                    function_name: fname,
+                    function_args: res,
+                    instance_id: instanceID
+                });
+            }).catch((err) => {
+                src.send("__messenger__exec_fnc_result", {
+                    function_status: "error",
+                    function_name: fname,
+                    function_args: err,
+                    instance_id: instanceID
+                });
+            });
+        });
     }
 }
 

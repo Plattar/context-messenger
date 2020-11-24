@@ -1,4 +1,5 @@
-const Util = require("../util/util");
+const Util = require("../util/util.js");
+const global = require("../global-event-handler.js");
 
 /**
  * WrappedRemoteFunction represents a container that holds and maintains a specific function
@@ -11,6 +12,34 @@ class WrappedRemoteFunction {
         this._remoteInterface = remoteInterface;
 
         this._callInstances = {};
+
+        global.default().listen("__messenger__exec_fnc_result", (src, data) => {
+            const instanceID = data.instance_id;
+
+            // the function name must match
+            if (data.function_name !== this._funcName) {
+                return;
+            }
+
+            // the instance ID must be found, otherwise this is a rogue execution
+            // that can be ignored (should not happen)
+            if (!this._callInstances[instanceID]) {
+                return;
+            }
+
+            const promise = this._callInstances[instanceID];
+
+            // remove the old instance
+            delete this._callInstances[instanceID];
+
+            // perform the promise callbacks
+            if (data.function_status === "success") {
+                promise.accept(data.function_args);
+            }
+            else {
+                promise.reject(data.function_args);
+            }
+        });
     }
 
     /**
@@ -30,19 +59,20 @@ class WrappedRemoteFunction {
 
         // add this call as a unique instance and save the Promise
         // to be executed later
-        const promise = new Promise();
+        return new Promise((accept, reject) => {
+            // save this promise to be executed later
+            this._callInstances[instanceID] = {
+                accept: accept,
+                reject: reject
+            };
 
-        // save this promise to be executed later
-        this._callInstances[instanceID] = promise;
-
-        // execute this event in another context
-        this._remoteInterface.send("__messenger__exec_fnc", {
-            instance_id: instanceID,
-            function_name: this._funcName,
-            function_args: args
+            // execute this event in another context
+            this._remoteInterface.send("__messenger__exec_fnc", {
+                instance_id: instanceID,
+                function_name: this._funcName,
+                function_args: args
+            });
         });
-
-        return promise;
     }
 }
 

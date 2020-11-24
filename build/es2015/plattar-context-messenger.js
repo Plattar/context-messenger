@@ -1,5 +1,13 @@
 "use strict";
 
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
 function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
 
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
@@ -651,12 +659,31 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(Messenger, [{
           key: "_setup",
           value: function _setup() {
+            this._registerListeners(); // if a parent exists, send a message calling for an initialisation
+
+
+            if (this._parentStack) {
+              this._parentStack.send("__messenger__child_init");
+            } else {
+              console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined");
+            }
+          }
+          /**
+           * Register all critical listener interfaces so the framework can function correctly
+           */
+
+        }, {
+          key: "_registerListeners",
+          value: function _registerListeners() {
             var _this3 = this;
 
             global["default"]().listen("__messenger__child_init", function (src, data) {
               var iframeID = src.id; // check reserved key list
 
               switch (iframeID) {
+                case undefined:
+                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID cannot be undefined");
+
                 case "self":
                   throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
 
@@ -688,13 +715,32 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
               }
 
               _this3["parent"].setup(new RemoteInterface(src.source, src.origin));
-            }); // if a parent exists, send a message calling for an initialisation
+            }); // this listener will fire remotely to execute a function in the current
+            // context
 
-            if (this._parentStack) {
-              this._parentStack.send("__messenger__child_init");
-            } else {
-              console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined");
-            }
+            global["default"]().listen("__messenger__exec_fnc", function (src, data) {
+              var _this3$self;
+
+              var instanceID = data.instance_id;
+              var args = data.function_args;
+              var fname = data.function_name; // using JS reflection, execute the local function
+
+              (_this3$self = _this3.self)[fname].apply(_this3$self, _toConsumableArray(args)).then(function (res) {
+                src.send("__messenger__exec_fnc_result", {
+                  function_status: "success",
+                  function_name: fname,
+                  function_args: res,
+                  instance_id: instanceID
+                });
+              })["catch"](function (err) {
+                src.send("__messenger__exec_fnc_result", {
+                  function_status: "error",
+                  function_name: fname,
+                  function_args: err,
+                  instance_id: instanceID
+                });
+              });
+            });
           }
         }]);
 
@@ -879,7 +925,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       "./wrapped-remote-function": 12
     }],
     12: [function (require, module, exports) {
-      var Util = require("../util/util");
+      var Util = require("../util/util.js");
+
+      var global = require("../global-event-handler.js");
       /**
        * WrappedRemoteFunction represents a container that holds and maintains a specific function
        * that can be called by any context. This particular container executes and handles remote 
@@ -889,11 +937,36 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       var WrappedRemoteFunction = /*#__PURE__*/function () {
         function WrappedRemoteFunction(funcName, remoteInterface) {
+          var _this4 = this;
+
           _classCallCheck(this, WrappedRemoteFunction);
 
           this._funcName = funcName;
           this._remoteInterface = remoteInterface;
           this._callInstances = {};
+          global["default"]().listen("__messenger__exec_fnc_result", function (src, data) {
+            var instanceID = data.instance_id; // the function name must match
+
+            if (data.function_name !== _this4._funcName) {
+              return;
+            } // the instance ID must be found, otherwise this is a rogue execution
+            // that can be ignored (should not happen)
+
+
+            if (!_this4._callInstances[instanceID]) {
+              return;
+            }
+
+            var promise = _this4._callInstances[instanceID]; // remove the old instance
+
+            delete _this4._callInstances[instanceID]; // perform the promise callbacks
+
+            if (data.function_status === "success") {
+              promise.accept(data.function_args);
+            } else {
+              promise.reject(data.function_args);
+            }
+          });
         }
         /**
          * Executes a remote function that lays outside of the current context
@@ -903,6 +976,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(WrappedRemoteFunction, [{
           key: "exec",
           value: function exec() {
+            var _this5 = this;
+
+            for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+              args[_key3] = arguments[_key3];
+            }
+
             var instanceID = Util.id(); // ensure this instance ID has not been added previously
             // NOTE: This should not ever be executed as all instance ID's are unique
             // If this executes then the PRNG scheme needs to be swapped
@@ -915,21 +994,19 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
             // to be executed later
 
 
-            var promise = new Promise(); // save this promise to be executed later
+            return new Promise(function (accept, reject) {
+              // save this promise to be executed later
+              _this5._callInstances[instanceID] = {
+                accept: accept,
+                reject: reject
+              }; // execute this event in another context
 
-            this._callInstances[instanceID] = promise; // execute this event in another context
-
-            for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-              args[_key3] = arguments[_key3];
-            }
-
-            this._remoteInterface.send("__messenger__exec_fnc", {
-              instance_id: instanceID,
-              function_name: this._funcName,
-              function_args: args
+              _this5._remoteInterface.send("__messenger__exec_fnc", {
+                instance_id: instanceID,
+                function_name: _this5._funcName,
+                function_args: args
+              });
             });
-
-            return promise;
           }
         }]);
 
@@ -938,7 +1015,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = WrappedRemoteFunction;
     }, {
-      "../util/util": 13
+      "../global-event-handler.js": 8,
+      "../util/util.js": 13
     }],
     13: [function (require, module, exports) {
       var Util = /*#__PURE__*/function () {
