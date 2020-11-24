@@ -9,13 +9,10 @@
 <body>
     <p>This is an IFrame/Nested Frame</p>
     <script type='text/javascript'>
-        Plattar.messenger.onload("parent", () => {
-            console.log(Plattar.messenger.id + " loaded parent");
-        });
-
-        Plattar.messenger.onload("self", () => {
-            console.log(Plattar.messenger.id + " loaded self");
-        });
+        // register a function in the current context
+        Plattar.messenger.self.child_add_fnc = (a, b) => {
+            return a + b;
+        };
     </script>
 </body>
 

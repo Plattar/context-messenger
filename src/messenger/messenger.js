@@ -45,6 +45,10 @@ class Messenger {
                 switch (prop) {
                     case "id": return target._id;
                     case "self": return target._currentFunctionList;
+                    case "_setup":
+                    case "_registerListeners":
+                    case "_id":
+                    case "_parentStack": return target[prop];
                     default:
                         break;
                 }
@@ -121,7 +125,7 @@ class Messenger {
             const fname = data.function_name;
 
             // using JS reflection, execute the local function
-            this.self[fname](...args).then((res) => {
+            Plattar.messenger.self[fname](...args).then((res) => {
                 src.send("__messenger__exec_fnc_result", {
                     function_status: "success",
                     function_name: fname,

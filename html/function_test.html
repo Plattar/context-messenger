@@ -16,6 +16,12 @@
     <script type='text/javascript'>
         Plattar.messenger.onload("plattar_frame_1", () => {
             console.log("loaded plattar_frame_1");
+
+            Plattar.messenger.plattar_frame_1.child_add_fnc(1, 2).then((res) => {
+                console.log("plattar_frame_1 adding 1, 2 and result is " + res);
+            }).catch((err) => {
+                console.error(err);
+            });
         });
 
         Plattar.messenger.onload("plattar_frame_2", () => {
@@ -28,11 +34,6 @@
 
         Plattar.messenger.onload("plattar_frame_4", () => {
             console.log("loaded plattar_frame_4");
-        });
-
-        // this is not needed and is optional, self is always defined
-        Plattar.messenger.onload("self", () => {
-            console.log("loaded self");
         });
     </script>
 </body>

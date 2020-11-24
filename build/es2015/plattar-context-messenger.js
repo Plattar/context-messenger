@@ -636,6 +636,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                 case "self":
                   return target._currentFunctionList;
 
+                case "_setup":
+                case "_registerListeners":
+                case "_id":
+                case "_parentStack":
+                  return target[prop];
+
                 default:
                   break;
               }
@@ -719,13 +725,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
             // context
 
             global["default"]().listen("__messenger__exec_fnc", function (src, data) {
-              var _this3$self;
+              var _Plattar$messenger$se;
 
               var instanceID = data.instance_id;
               var args = data.function_args;
               var fname = data.function_name; // using JS reflection, execute the local function
 
-              (_this3$self = _this3.self)[fname].apply(_this3$self, _toConsumableArray(args)).then(function (res) {
+              (_Plattar$messenger$se = Plattar.messenger.self)[fname].apply(_Plattar$messenger$se, _toConsumableArray(args)).then(function (res) {
                 src.send("__messenger__exec_fnc_result", {
                   function_status: "success",
                   function_name: fname,
