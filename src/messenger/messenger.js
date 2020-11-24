@@ -2,6 +2,7 @@ const CurrentFunctionList = require("./current/current-function-list");
 const RemoteInterface = require("./remote-interface");
 const RemoteFunctionList = require("./remote/remote-function-list");
 const Util = require("./util/util.js");
+const global = require("./global-event-handler.js");
 
 /**
  * Messenger is a singleton that allows calling functions in multiple
@@ -65,42 +66,35 @@ class Messenger {
      * Internal function call to initialise the messenger framework
      */
     _setup() {
-        // if this message is recieved, then let the messenger know to
-        // initialise the child object
-        window.addEventListener("message", (evt) => {
-            const data = evt.data;
+        global.default().listen("__messenger__child_init", (src, data) => {
+            const iframeID = src.id;
 
-            if (data === "__messenger__child_init") {
-                const iframeID = evt.source.frameElement.id;
-
-                if (iframeID === "self") {
-                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
-                }
-
-                if (iframeID === "parent") {
-                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"parent\" cannot be used as keyword is reserved");
-                }
-
-                if (iframeID === "id") {
-                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"id\" cannot be used as keyword is reserved");
-                }
-
-                // initialise the child iframe as a messenger pipe
-                if (!this[iframeID]) {
-                    this[iframeID] = new RemoteFunctionList(iframeID);
-                }
-
-                this[iframeID].setup(new RemoteInterface(evt.source, evt.origin));
-
-                evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
+            // check reserved key list
+            switch (iframeID) {
+                case "self": throw new Error("Messenger[" + this._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
+                case "parent": throw new Error("Messenger[" + this._id + "].setup() Component ID of \"parent\" cannot be used as the keyword is reserved");
+                case "id": throw new Error("Messenger[" + this._id + "].setup() Component ID of \"id\" cannot be used as the keyword is reserved");
+                case "onload": throw new Error("Messenger[" + this._id + "].setup() Component ID of \"onload\" cannot be used as the keyword is reserved");
+                default:
+                    break;
             }
-            else if (data === "__messenger__parent_init") {
-                if (!this["parent"]) {
-                    this["parent"] = new RemoteFunctionList("parent");
-                }
 
-                this["parent"].setup(new RemoteInterface(evt.source, evt.origin));
+            // initialise the child iframe as a messenger pipe
+            if (!this[iframeID]) {
+                this[iframeID] = new RemoteFunctionList(iframeID);
             }
+
+            this[iframeID].setup(new RemoteInterface(src.source, src.origin));
+
+            src.send("__messenger__parent_init");
+        });
+
+        global.default().listen("__messenger__parent_init", (src, data) => {
+            if (!this["parent"]) {
+                this["parent"] = new RemoteFunctionList("parent");
+            }
+
+            this["parent"].setup(new RemoteInterface(src.source, src.origin));
         });
 
         // if a parent exists, send a message calling for an initialisation

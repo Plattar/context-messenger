@@ -20,6 +20,13 @@ class RemoteInterface {
     }
 
     /**
+     * Returns the frameElement ID, or undefined if no frameElement exists in the source
+     */
+    get id() {
+        return this.source.frameElement ? this.source.frameElement.id : undefined;
+    }
+
+    /**
      * Use the registered source to send data upstream/downstream
      */
     send(event, data) {

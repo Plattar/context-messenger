@@ -82,7 +82,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       };
     }, {
       "./memory/memory.js": 2,
-      "./messenger/messenger.js": 8
+      "./messenger/messenger.js": 9
     }],
     2: [function (require, module, exports) {
       var PermanentMemory = require("./permanent-memory");
@@ -495,11 +495,93 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       module.exports = WrappedLocalFunction;
     }, {}],
     8: [function (require, module, exports) {
+      var RemoteInterface = require("./remote-interface.js");
+      /**
+       * This is a singleton class that handles events on a global basis. Allows
+       * registering local event listeners etc..
+       */
+
+
+      var GlobalEventHandler = /*#__PURE__*/function () {
+        function GlobalEventHandler() {
+          var _this2 = this;
+
+          _classCallCheck(this, GlobalEventHandler);
+
+          this._eventListeners = {}; // global handler that forwards events to their respectful places
+          // throughout the framework
+
+          window.addEventListener("message", function (evt) {
+            var data = evt.data;
+            var jsonData = undefined;
+
+            try {
+              jsonData = JSON.parse(data);
+            } catch (e) {
+              // catch does nothing
+              // this event might not be what we are looking for
+              jsonData = undefined;
+            } // make sure the event is properly formatted
+
+
+            if (jsonData && jsonData.event && jsonData.data) {
+              // see if there are any listeners for this
+              if (_this2._eventListeners[jsonData.event]) {
+                var remoteInterface = new RemoteInterface(evt.source, evt.origin); // loop through and call all the event handlers
+
+                _this2._eventListeners[jsonData.event].forEach(function (callback) {
+                  try {
+                    callback(remoteInterface, jsonData.data);
+                  } catch (e) {
+                    console.error("GlobalEventHandler.message() error occured during callback ");
+                    console.error(e);
+                  }
+                });
+              }
+            }
+          });
+        }
+
+        _createClass(GlobalEventHandler, [{
+          key: "listen",
+          value: function listen(event, callback) {
+            if (typeof callback !== "function") {
+              throw new TypeError("GlobalEventHandler.listen(event, callback) callback must be a type of function.");
+            }
+
+            if (!this._eventListeners[event]) {
+              this._eventListeners[event] = [];
+            }
+
+            this._eventListeners[event].push(callback);
+          }
+        }]);
+
+        return GlobalEventHandler;
+      }();
+
+      GlobalEventHandler["default"] = function () {
+        if (!GlobalEventHandler._default) {
+          GlobalEventHandler._default = new GlobalEventHandler();
+        }
+
+        return GlobalEventHandler._default;
+      };
+
+      module.exports = GlobalEventHandler;
+    }, {
+      "./remote-interface.js": 10
+    }],
+    9: [function (require, module, exports) {
       var CurrentFunctionList = require("./current/current-function-list");
+
+      var RemoteInterface = require("./remote-interface");
 
       var RemoteFunctionList = require("./remote/remote-function-list");
 
       var Util = require("./util/util.js");
+
+      var global = require("./global-event-handler.js");
       /**
        * Messenger is a singleton that allows calling functions in multiple
        * contexts
@@ -513,7 +595,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           // generate a unique id for this instance of the messenger
           this._id = Util.id(); // ensure the parent stack does not target itself
 
-          this._parentStack = window.parent ? this._isIframe() ? window.parent : undefined : undefined; // allow adding local functions immedietly
+          this._parentStack = RemoteInterface["default"](); // allow adding local functions immedietly
 
           this._currentFunctionList = new CurrentFunctionList(); // we still need to confirm if a parent exists and has the messenger
           // framework added.. see _setup() function
@@ -569,65 +651,50 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(Messenger, [{
           key: "_setup",
           value: function _setup() {
-            var _this2 = this;
+            var _this3 = this;
 
-            // if this message is recieved, then let the messenger know to
-            // initialise the child object
-            window.addEventListener("message", function (evt) {
-              var data = evt.data;
+            global["default"]().listen("__messenger__child_init", function (src, data) {
+              var iframeID = src.id; // check reserved key list
 
-              if (data === "__messenger__child_init") {
-                var iframeID = evt.source.frameElement.id;
+              switch (iframeID) {
+                case "self":
+                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
 
-                if (iframeID === "self") {
-                  throw new Error("Messenger[" + _this2._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
-                }
+                case "parent":
+                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"parent\" cannot be used as the keyword is reserved");
 
-                if (iframeID === "parent") {
-                  throw new Error("Messenger[" + _this2._id + "].setup() Component ID of \"parent\" cannot be used as keyword is reserved");
-                }
+                case "id":
+                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"id\" cannot be used as the keyword is reserved");
 
-                if (iframeID === "id") {
-                  throw new Error("Messenger[" + _this2._id + "].setup() Component ID of \"id\" cannot be used as keyword is reserved");
-                } // initialise the child iframe as a messenger pipe
+                case "onload":
+                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"onload\" cannot be used as the keyword is reserved");
+
+                default:
+                  break;
+              } // initialise the child iframe as a messenger pipe
 
 
-                if (!_this2[iframeID]) {
-                  _this2[iframeID] = new RemoteFunctionList(iframeID);
-                }
-
-                _this2[iframeID].setup({
-                  source: evt.source,
-                  origin: evt.origin
-                });
-
-                evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
-              } else if (data === "__messenger__parent_init") {
-                if (!_this2["parent"]) {
-                  _this2["parent"] = new RemoteFunctionList("parent");
-                }
-
-                _this2["parent"].setup({
-                  source: evt.source,
-                  origin: evt.origin
-                });
+              if (!_this3[iframeID]) {
+                _this3[iframeID] = new RemoteFunctionList(iframeID);
               }
+
+              _this3[iframeID].setup(new RemoteInterface(src.source, src.origin));
+
+              src.send("__messenger__parent_init");
+            });
+            global["default"]().listen("__messenger__parent_init", function (src, data) {
+              if (!_this3["parent"]) {
+                _this3["parent"] = new RemoteFunctionList("parent");
+              }
+
+              _this3["parent"].setup(new RemoteInterface(src.source, src.origin));
             }); // if a parent exists, send a message calling for an initialisation
 
             if (this._parentStack) {
-              this._parentStack.postMessage("__messenger__child_init", "*");
+              this._parentStack.send("__messenger__child_init");
             } else {
               console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined");
             }
-          }
-          /**
-           * Checks if the current Messenger is actually inside an iframe (embedded)
-           */
-
-        }, {
-          key: "_isIframe",
-          value: function _isIframe() {
-            return window.frameElement && window.frameElement.nodeName == "IFRAME";
           }
         }]);
 
@@ -637,10 +704,82 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       module.exports = new Messenger();
     }, {
       "./current/current-function-list": 6,
-      "./remote/remote-function-list": 9,
-      "./util/util.js": 11
+      "./global-event-handler.js": 8,
+      "./remote-interface": 10,
+      "./remote/remote-function-list": 11,
+      "./util/util.js": 13
     }],
-    9: [function (require, module, exports) {
+    10: [function (require, module, exports) {
+      /**
+       * Provides a single useful interface for performing remote function calls
+       */
+      var RemoteInterface = /*#__PURE__*/function () {
+        function RemoteInterface(source, origin) {
+          _classCallCheck(this, RemoteInterface);
+
+          this._source = source;
+          this._origin = origin;
+
+          if (typeof this._source.postMessage !== 'function') {
+            throw new Error("RemoteInterface() provided source is invalid");
+          }
+        }
+
+        _createClass(RemoteInterface, [{
+          key: "send",
+
+          /**
+           * Use the registered source to send data upstream/downstream
+           */
+          value: function send(event, data) {
+            var sendData = {
+              event: event,
+              data: data || {}
+            };
+            this.source.postMessage(JSON.stringify(sendData), this.origin);
+          }
+          /**
+           * Creates and returns a default RemoteInterface for the parent stack
+           */
+
+        }, {
+          key: "source",
+          get: function get() {
+            return this._source;
+          }
+        }, {
+          key: "origin",
+          get: function get() {
+            return this._origin;
+          }
+          /**
+           * Returns the frameElement ID, or undefined if no frameElement exists in the source
+           */
+
+        }, {
+          key: "id",
+          get: function get() {
+            return this.source.frameElement ? this.source.frameElement.id : undefined;
+          }
+        }], [{
+          key: "default",
+          value: function _default() {
+            var parentStack = window.parent ? window.frameElement && window.frameElement.nodeName == "IFRAME" ? window.parent : undefined : undefined;
+
+            if (parentStack) {
+              return new RemoteInterface(parentStack, "*");
+            }
+
+            return undefined;
+          }
+        }]);
+
+        return RemoteInterface;
+      }();
+
+      module.exports = RemoteInterface;
+    }, {}],
+    11: [function (require, module, exports) {
       var WrappedFunction = require("./wrapped-remote-function");
 
       var RemoteFunctionList = /*#__PURE__*/function () {
@@ -706,7 +845,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(RemoteFunctionList, [{
           key: "setup",
           value: function setup(remoteInterface) {
-            if (!remoteInterface.source || typeof remoteInterface.source.postMessage !== 'function') {
+            if (typeof remoteInterface.send !== 'function') {
               throw new Error("RemoteFunctionList.setup() provided invalid interface");
             }
 
@@ -737,9 +876,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = RemoteFunctionList;
     }, {
-      "./wrapped-remote-function": 10
+      "./wrapped-remote-function": 12
     }],
-    10: [function (require, module, exports) {
+    12: [function (require, module, exports) {
       var Util = require("../util/util");
       /**
        * WrappedRemoteFunction represents a container that holds and maintains a specific function
@@ -754,11 +893,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
           this._funcName = funcName;
           this._remoteInterface = remoteInterface;
-          this._callInstances = {}; // listen for execution callbacks
-
-          window.addEventListener("message", function (evt) {
-            var data = evt.data;
-          });
+          this._callInstances = {};
         }
         /**
          * Executes a remote function that lays outside of the current context
@@ -768,20 +903,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(WrappedRemoteFunction, [{
           key: "exec",
           value: function exec() {
-            var instanceID = Util.id();
-
-            for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-              args[_key3] = arguments[_key3];
-            }
-
-            var compiledData = {
-              event: "__messenger__exec_fnc",
-              data: {
-                instance_id: instanceID,
-                function_name: this._funcName,
-                function_args: args
-              }
-            }; // ensure this instance ID has not been added previously
+            var instanceID = Util.id(); // ensure this instance ID has not been added previously
             // NOTE: This should not ever be executed as all instance ID's are unique
             // If this executes then the PRNG scheme needs to be swapped
 
@@ -793,10 +915,19 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
             // to be executed later
 
 
-            var promise = new Promise();
+            var promise = new Promise(); // save this promise to be executed later
+
             this._callInstances[instanceID] = promise; // execute this event in another context
 
-            this._remoteInterface.source.postMessage(JSON.stringify(compiledData), this._remoteInterface.origin);
+            for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+              args[_key3] = arguments[_key3];
+            }
+
+            this._remoteInterface.send("__messenger__exec_fnc", {
+              instance_id: instanceID,
+              function_name: this._funcName,
+              function_args: args
+            });
 
             return promise;
           }
@@ -807,9 +938,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = WrappedRemoteFunction;
     }, {
-      "../util/util": 11
+      "../util/util": 13
     }],
-    11: [function (require, module, exports) {
+    13: [function (require, module, exports) {
       var Util = /*#__PURE__*/function () {
         function Util() {
           _classCallCheck(this, Util);
