@@ -19,6 +19,7 @@
     <p>Mouse over the rectangle above to get the horizontal and vertical coordinates of your mouse pointer.</p>
 
     <p id="demo"></p>
+    <p id="timestamp"></p>
 
     <iframe id="plattar_frame_1" src="./function_test_nested.html" title="nested iframe 1"></iframe>
     <iframe id="plattar_frame_2" src="./function_test_nested.html" title="nested iframe 2"></iframe>
@@ -48,6 +49,7 @@
 
         function clearCoor() {
             document.getElementById("demo").innerHTML = "stopped";
+            document.getElementById("timestamp").innerHTML = Date.now();
 
             frames.forEach((frame) => {
                 if (frame) {

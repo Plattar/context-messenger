@@ -10,6 +10,8 @@
     <p>Coordinate Passed From Parent.</p>
 
     <p id="demo"></p>
+    <p id="timestamp"></p>
+
     <script type='text/javascript'>
         // register a function in the current context
         Plattar.messenger.self.render_mouse_coord = (x, y) => {
@@ -18,6 +20,7 @@
         };
 
         Plattar.messenger.self.stop_mouse_coord = () => {
+            document.getElementById("timestamp").innerHTML = Date.now();
             document.getElementById("demo").innerHTML = "stopped";
         };
     </script>
