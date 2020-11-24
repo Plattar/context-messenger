@@ -211,7 +211,7 @@ const WrappedFunction = require("./wrapped-local-function");
 
 class CurrentFunctionList {
     constructor() {
-        return new Proxy({}, {
+        return new Proxy(this, {
             get: (target, prop, receiver) => {
                 // sets the watcher callback
                 if (prop === "watch") {
@@ -353,6 +353,43 @@ class Messenger {
         this._parentFunctionList = undefined;
 
         this._setup();
+
+        return new Proxy(this, {
+            get: (target, prop, receiver) => {
+                // sets the watcher callback
+                if (prop === "onload") {
+                    return (variable, callback) => {
+                        if (variable === "self" || variable === "id") {
+                            return callback();
+                        }
+
+                        if (!target[variable]) {
+                            target[variable] = new RemoteFunctionList(variable);
+                        }
+
+                        target[variable].onload(callback);
+                    };
+                }
+
+                if (prop === "id") {
+                    return target._id;
+                }
+
+                if (prop === "self") {
+                    return this._currentFunctionList;
+                }
+
+                const targetVar = target[prop];
+
+                // return undefined if target variable doesn't exist
+                // or it has not been verified yet
+                if (!targetVar || !targetVar.isValid()) {
+                    return undefined;
+                }
+
+                return target[prop];
+            }
+        });
     }
 
     /**
@@ -367,13 +404,33 @@ class Messenger {
             if (data === "__messenger__child_init") {
                 const iframeID = evt.source.frameElement.id;
 
+                if (iframeID === "self") {
+                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
+                }
+
+                if (iframeID === "parent") {
+                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"parent\" cannot be used as keyword is reserved");
+                }
+
+                if (iframeID === "id") {
+                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"id\" cannot be used as keyword is reserved");
+                }
+
                 // initialise the child iframe as a messenger pipe
-                this[iframeID] = new RemoteFunctionList(evt.source);
+                if (!this[iframeID]) {
+                    this[iframeID] = new RemoteFunctionList(iframeID);
+                }
+
+                this[iframeID].setup(evt.source);
 
                 evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
             }
             else if (data === "__messenger__parent_init") {
-                this._parentFunctionList = new RemoteFunctionList(evt.source);
+                if (!this["parent"]) {
+                    this["parent"] = new RemoteFunctionList("parent");
+                }
+
+                this["parent"].setup(evt.source);
             }
         });
 
@@ -392,22 +449,6 @@ class Messenger {
     _isIframe() {
         return window.frameElement && window.frameElement.nodeName == "IFRAME";
     }
-
-    /**
-     * Allows calling functions on the parent stack. Use this if you
-     * are inside the iframe and want to call functions on the parent page.
-     */
-    get parent() {
-        return this._parentFunctionList;
-    }
-
-    /**
-     * The current stack is the current context. This is primarily used to
-     * define functions that exist on the current stack.
-     */
-    get self() {
-        return this._currentFunctionList;
-    }
 }
 
 module.exports = new Messenger();
@@ -415,8 +456,14 @@ module.exports = new Messenger();
 const WrappedFunction = require("./wrapped-remote-function");
 
 class RemoteFunctionList {
-    constructor() {
-        return new Proxy({}, {
+    constructor(remoteName) {
+
+        this._remoteInterface = undefined;
+        this._callback = undefined;
+
+        this._remoteName = remoteName;
+
+        return new Proxy(this, {
             get: (target, prop, receiver) => {
                 // sets the watcher callback
                 if (prop === "watch") {
@@ -433,20 +480,42 @@ class RemoteFunctionList {
                     throw new Error("RemoteFunctionList.purge cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.purge() instead?");
                 }
 
-                // on first access, we create a WrappedValue type
-                if (!target[prop]) {
-                    target[prop] = new WrappedFunction(prop);
-                }
-
-                // return an anonymous function that executes for this variable
-                return (...args) => {
-                    return target[prop].exec(...args);
-                };
+                return target[prop];
             },
             set: (target, prop, value) => {
+                if (prop === "_remoteInterface" || prop === "_callback") {
+                    target[prop] = value;
+
+                    return true;
+                }
+
                 throw new Error("RemoteFunctionList.set cannot add a remote function from current context. Use Plattar.messenger.self instead");
             }
         });
+    }
+
+    setup(remoteInterface) {
+        if (typeof remoteInterface.postMessage !== 'function') {
+            throw new Error("RemoteFunctionList.setup() provided invalid interface");
+        }
+
+        this._remoteInterface = remoteInterface;
+
+        if (this._callback) {
+            this._callback();
+        }
+    }
+
+    isValid() {
+        return this._remoteInterface != undefined;
+    }
+
+    onload(callback) {
+        this._callback = callback;
+
+        if (this.isValid()) {
+            this._callback();
+        }
     }
 }
 

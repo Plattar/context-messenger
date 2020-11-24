@@ -22,6 +22,43 @@ class Messenger {
         this._parentFunctionList = undefined;
 
         this._setup();
+
+        return new Proxy(this, {
+            get: (target, prop, receiver) => {
+                // sets the watcher callback
+                if (prop === "onload") {
+                    return (variable, callback) => {
+                        if (variable === "self" || variable === "id") {
+                            return callback();
+                        }
+
+                        if (!target[variable]) {
+                            target[variable] = new RemoteFunctionList(variable);
+                        }
+
+                        target[variable].onload(callback);
+                    };
+                }
+
+                if (prop === "id") {
+                    return target._id;
+                }
+
+                if (prop === "self") {
+                    return this._currentFunctionList;
+                }
+
+                const targetVar = target[prop];
+
+                // return undefined if target variable doesn't exist
+                // or it has not been verified yet
+                if (!targetVar || !targetVar.isValid()) {
+                    return undefined;
+                }
+
+                return target[prop];
+            }
+        });
     }
 
     /**
@@ -36,13 +73,33 @@ class Messenger {
             if (data === "__messenger__child_init") {
                 const iframeID = evt.source.frameElement.id;
 
+                if (iframeID === "self") {
+                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
+                }
+
+                if (iframeID === "parent") {
+                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"parent\" cannot be used as keyword is reserved");
+                }
+
+                if (iframeID === "id") {
+                    throw new Error("Messenger[" + this._id + "].setup() Component ID of \"id\" cannot be used as keyword is reserved");
+                }
+
                 // initialise the child iframe as a messenger pipe
-                this[iframeID] = new RemoteFunctionList(evt.source);
+                if (!this[iframeID]) {
+                    this[iframeID] = new RemoteFunctionList(iframeID);
+                }
+
+                this[iframeID].setup(evt.source);
 
                 evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
             }
             else if (data === "__messenger__parent_init") {
-                this._parentFunctionList = new RemoteFunctionList(evt.source);
+                if (!this["parent"]) {
+                    this["parent"] = new RemoteFunctionList("parent");
+                }
+
+                this["parent"].setup(evt.source);
             }
         });
 
@@ -60,22 +117,6 @@ class Messenger {
      */
     _isIframe() {
         return window.frameElement && window.frameElement.nodeName == "IFRAME";
-    }
-
-    /**
-     * Allows calling functions on the parent stack. Use this if you
-     * are inside the iframe and want to call functions on the parent page.
-     */
-    get parent() {
-        return this._parentFunctionList;
-    }
-
-    /**
-     * The current stack is the current context. This is primarily used to
-     * define functions that exist on the current stack.
-     */
-    get self() {
-        return this._currentFunctionList;
     }
 }
 

@@ -341,7 +341,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       var CurrentFunctionList = function CurrentFunctionList() {
         _classCallCheck(this, CurrentFunctionList);
 
-        return new Proxy({}, {
+        return new Proxy(this, {
           get: function get(target, prop, receiver) {
             // sets the watcher callback
             if (prop === "watch") {
@@ -508,6 +508,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       var Messenger = /*#__PURE__*/function () {
         function Messenger() {
+          var _this2 = this;
+
           _classCallCheck(this, Messenger);
 
           // generate a unique id for this instance of the messenger
@@ -521,6 +523,42 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           this._parentFunctionList = undefined;
 
           this._setup();
+
+          return new Proxy(this, {
+            get: function get(target, prop, receiver) {
+              // sets the watcher callback
+              if (prop === "onload") {
+                return function (variable, callback) {
+                  if (variable === "self" || variable === "id") {
+                    return callback();
+                  }
+
+                  if (!target[variable]) {
+                    target[variable] = new RemoteFunctionList(variable);
+                  }
+
+                  target[variable].onload(callback);
+                };
+              }
+
+              if (prop === "id") {
+                return target._id;
+              }
+
+              if (prop === "self") {
+                return _this2._currentFunctionList;
+              }
+
+              var targetVar = target[prop]; // return undefined if target variable doesn't exist
+              // or it has not been verified yet
+
+              if (!targetVar || !targetVar.isValid()) {
+                return undefined;
+              }
+
+              return target[prop];
+            }
+          });
         }
         /**
          * Internal function call to initialise the messenger framework
@@ -530,7 +568,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(Messenger, [{
           key: "_setup",
           value: function _setup() {
-            var _this2 = this;
+            var _this3 = this;
 
             // if this message is recieved, then let the messenger know to
             // initialise the child object
@@ -538,12 +576,34 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
               var data = evt.data;
 
               if (data === "__messenger__child_init") {
-                var iframeID = evt.source.frameElement.id; // initialise the child iframe as a messenger pipe
+                var iframeID = evt.source.frameElement.id;
 
-                _this2[iframeID] = new RemoteFunctionList(evt.source);
+                if (iframeID === "self") {
+                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
+                }
+
+                if (iframeID === "parent") {
+                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"parent\" cannot be used as keyword is reserved");
+                }
+
+                if (iframeID === "id") {
+                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"id\" cannot be used as keyword is reserved");
+                } // initialise the child iframe as a messenger pipe
+
+
+                if (!_this3[iframeID]) {
+                  _this3[iframeID] = new RemoteFunctionList(iframeID);
+                }
+
+                _this3[iframeID].setup(evt.source);
+
                 evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
               } else if (data === "__messenger__parent_init") {
-                _this2._parentFunctionList = new RemoteFunctionList(evt.source);
+                if (!_this3["parent"]) {
+                  _this3["parent"] = new RemoteFunctionList("parent");
+                }
+
+                _this3["parent"].setup(evt.source);
               }
             }); // if a parent exists, send a message calling for an initialisation
 
@@ -562,26 +622,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           value: function _isIframe() {
             return window.frameElement && window.frameElement.nodeName == "IFRAME";
           }
-          /**
-           * Allows calling functions on the parent stack. Use this if you
-           * are inside the iframe and want to call functions on the parent page.
-           */
-
-        }, {
-          key: "parent",
-          get: function get() {
-            return this._parentFunctionList;
-          }
-          /**
-           * The current stack is the current context. This is primarily used to
-           * define functions that exist on the current stack.
-           */
-
-        }, {
-          key: "self",
-          get: function get() {
-            return this._currentFunctionList;
-          }
         }]);
 
         return Messenger;
@@ -596,43 +636,74 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     9: [function (require, module, exports) {
       var WrappedFunction = require("./wrapped-remote-function");
 
-      var RemoteFunctionList = function RemoteFunctionList() {
-        _classCallCheck(this, RemoteFunctionList);
+      var RemoteFunctionList = /*#__PURE__*/function () {
+        function RemoteFunctionList(remoteName) {
+          _classCallCheck(this, RemoteFunctionList);
 
-        return new Proxy({}, {
-          get: function get(target, prop, receiver) {
-            // sets the watcher callback
-            if (prop === "watch") {
-              throw new Error("RemoteFunctionList.watch cannot watch execution of remote functions from current context. Did you mean to use Plattar.messenger.self instead?");
-            } // clears everything, including specific items
-
-
-            if (prop === "clear") {
-              throw new Error("RemoteFunctionList.clear cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.clear() instead?");
-            } // clears everything, including specific items
-
-
-            if (prop === "purge") {
-              throw new Error("RemoteFunctionList.purge cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.purge() instead?");
-            } // on first access, we create a WrappedValue type
+          this._remoteInterface = undefined;
+          this._callback = undefined;
+          this._remoteName = remoteName;
+          return new Proxy(this, {
+            get: function get(target, prop, receiver) {
+              // sets the watcher callback
+              if (prop === "watch") {
+                throw new Error("RemoteFunctionList.watch cannot watch execution of remote functions from current context. Did you mean to use Plattar.messenger.self instead?");
+              } // clears everything, including specific items
 
 
-            if (!target[prop]) {
-              target[prop] = new WrappedFunction(prop);
-            } // return an anonymous function that executes for this variable
+              if (prop === "clear") {
+                throw new Error("RemoteFunctionList.clear cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.clear() instead?");
+              } // clears everything, including specific items
 
 
-            return function () {
-              var _target$prop2;
+              if (prop === "purge") {
+                throw new Error("RemoteFunctionList.purge cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.purge() instead?");
+              }
 
-              return (_target$prop2 = target[prop]).exec.apply(_target$prop2, arguments);
-            };
-          },
-          set: function set(target, prop, value) {
-            throw new Error("RemoteFunctionList.set cannot add a remote function from current context. Use Plattar.messenger.self instead");
+              return target[prop];
+            },
+            set: function set(target, prop, value) {
+              if (prop === "_remoteInterface" || prop === "_callback") {
+                target[prop] = value;
+                return true;
+              }
+
+              throw new Error("RemoteFunctionList.set cannot add a remote function from current context. Use Plattar.messenger.self instead");
+            }
+          });
+        }
+
+        _createClass(RemoteFunctionList, [{
+          key: "setup",
+          value: function setup(remoteInterface) {
+            if (typeof remoteInterface.postMessage !== 'function') {
+              throw new Error("RemoteFunctionList.setup() provided invalid interface");
+            }
+
+            this._remoteInterface = remoteInterface;
+
+            if (this._callback) {
+              this._callback();
+            }
           }
-        });
-      };
+        }, {
+          key: "isValid",
+          value: function isValid() {
+            return this._remoteInterface != undefined;
+          }
+        }, {
+          key: "onload",
+          value: function onload(callback) {
+            this._callback = callback;
+
+            if (this.isValid()) {
+              this._callback();
+            }
+          }
+        }]);
+
+        return RemoteFunctionList;
+      }();
 
       module.exports = RemoteFunctionList;
     }, {

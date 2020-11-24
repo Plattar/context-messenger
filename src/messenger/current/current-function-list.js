@@ -2,7 +2,7 @@ const WrappedFunction = require("./wrapped-local-function");
 
 class CurrentFunctionList {
     constructor() {
-        return new Proxy({}, {
+        return new Proxy(this, {
             get: (target, prop, receiver) => {
                 // sets the watcher callback
                 if (prop === "watch") {

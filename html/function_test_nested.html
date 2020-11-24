@@ -4,13 +4,19 @@
 <head>
     <title>Function Test</title>
     <script type='text/javascript' src='../build/es2019/plattar-context-messenger.js'></script>
-    <script type='text/javascript'>
-    //todo
-    </script>
 </head>
 
 <body>
     <p>This is an IFrame/Nested Frame</p>
+    <script type='text/javascript'>
+        Plattar.messenger.onload("parent", () => {
+            console.log(Plattar.messenger.id + " loaded parent");
+        });
+
+        Plattar.messenger.onload("self", () => {
+            console.log(Plattar.messenger.id + " loaded self");
+        });
+    </script>
 </body>
 
 </html>

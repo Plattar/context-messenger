@@ -14,7 +14,25 @@
     <iframe id="plattar_frame_4" src="./function_test_nested.html" title="nested iframe 1"></iframe>
 
     <script type='text/javascript'>
-        console.log("done");
+        Plattar.messenger.onload("plattar_frame_1", () => {
+            console.log(Plattar.messenger.id + " loaded plattar_frame_1");
+        });
+
+        Plattar.messenger.onload("plattar_frame_2", () => {
+            console.log(Plattar.messenger.id + " loaded plattar_frame_2");
+        });
+
+        Plattar.messenger.onload("plattar_frame_3", () => {
+            console.log(Plattar.messenger.id + " loaded plattar_frame_3");
+        });
+
+        Plattar.messenger.onload("plattar_frame_4", () => {
+            console.log(Plattar.messenger.id + " loaded plattar_frame_4");
+        });
+
+        Plattar.messenger.onload("self", () => {
+            console.log(Plattar.messenger.id + " loaded self");
+        });
     </script>
 </body>
 
