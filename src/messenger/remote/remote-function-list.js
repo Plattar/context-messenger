@@ -60,7 +60,7 @@ class RemoteFunctionList {
     }
 
     setup(remoteInterface) {
-        if (!remoteInterface.source || typeof remoteInterface.source.postMessage !== 'function') {
+        if (typeof remoteInterface.send !== 'function') {
             throw new Error("RemoteFunctionList.setup() provided invalid interface");
         }
 

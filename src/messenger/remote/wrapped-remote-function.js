@@ -11,11 +11,6 @@ class WrappedRemoteFunction {
         this._remoteInterface = remoteInterface;
 
         this._callInstances = {};
-
-        // listen for execution callbacks
-        window.addEventListener("message", (evt) => {
-            const data = evt.data;
-        });
     }
 
     /**
@@ -23,15 +18,6 @@ class WrappedRemoteFunction {
      */
     exec(...args) {
         const instanceID = Util.id();
-
-        const compiledData = {
-            event: "__messenger__exec_fnc",
-            data: {
-                instance_id: instanceID,
-                function_name: this._funcName,
-                function_args: args
-            }
-        };
 
         // ensure this instance ID has not been added previously
         // NOTE: This should not ever be executed as all instance ID's are unique
@@ -46,10 +32,15 @@ class WrappedRemoteFunction {
         // to be executed later
         const promise = new Promise();
 
+        // save this promise to be executed later
         this._callInstances[instanceID] = promise;
 
         // execute this event in another context
-        this._remoteInterface.source.postMessage(JSON.stringify(compiledData), this._remoteInterface.origin);
+        this._remoteInterface.send("__messenger__exec_fnc", {
+            instance_id: instanceID,
+            function_name: this._funcName,
+            function_args: args
+        });
 
         return promise;
     }

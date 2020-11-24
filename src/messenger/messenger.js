@@ -1,4 +1,5 @@
 const CurrentFunctionList = require("./current/current-function-list");
+const RemoteInterface = require("./remote-interface");
 const RemoteFunctionList = require("./remote/remote-function-list");
 const Util = require("./util/util.js");
 
@@ -12,7 +13,7 @@ class Messenger {
         this._id = Util.id();
 
         // ensure the parent stack does not target itself
-        this._parentStack = window.parent ? (this._isIframe() ? window.parent : undefined) : undefined;
+        this._parentStack = RemoteInterface.default();
 
         // allow adding local functions immedietly
         this._currentFunctionList = new CurrentFunctionList();
@@ -89,10 +90,7 @@ class Messenger {
                     this[iframeID] = new RemoteFunctionList(iframeID);
                 }
 
-                this[iframeID].setup({
-                    source: evt.source,
-                    origin: evt.origin
-                });
+                this[iframeID].setup(new RemoteInterface(evt.source, evt.origin));
 
                 evt.source.postMessage("__messenger__parent_init", evt.origin || "*");
             }
@@ -101,27 +99,17 @@ class Messenger {
                     this["parent"] = new RemoteFunctionList("parent");
                 }
 
-                this["parent"].setup({
-                    source: evt.source,
-                    origin: evt.origin
-                });
+                this["parent"].setup(new RemoteInterface(evt.source, evt.origin));
             }
         });
 
         // if a parent exists, send a message calling for an initialisation
         if (this._parentStack) {
-            this._parentStack.postMessage("__messenger__child_init", "*");
+            this._parentStack.send("__messenger__child_init");
         }
         else {
             console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined");
         }
-    }
-
-    /**
-     * Checks if the current Messenger is actually inside an iframe (embedded)
-     */
-    _isIframe() {
-        return window.frameElement && window.frameElement.nodeName == "IFRAME";
     }
 }
 
