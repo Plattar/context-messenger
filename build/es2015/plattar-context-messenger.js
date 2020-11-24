@@ -658,8 +658,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
               if (prop === "purge") {
                 throw new Error("RemoteFunctionList.purge cannot clear/remove remote functions from current context. Did you mean to use Plattar.messenger.self.purge() instead?");
+              } // pre-defined functions for this object. Don't block access to these.
+
+
+              if (prop === "setup" || prop === "isValid" || prop === "onload" || prop === "_remoteInterface" || prop === "_callback") {
+                return target[prop];
               }
 
+              console.log(prop);
               return target[prop];
             },
             set: function set(target, prop, value) {

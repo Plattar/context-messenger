@@ -15,23 +15,24 @@
 
     <script type='text/javascript'>
         Plattar.messenger.onload("plattar_frame_1", () => {
-            console.log(Plattar.messenger.id + " loaded plattar_frame_1");
+            console.log("loaded plattar_frame_1");
         });
 
         Plattar.messenger.onload("plattar_frame_2", () => {
-            console.log(Plattar.messenger.id + " loaded plattar_frame_2");
+            console.log("loaded plattar_frame_2");
         });
 
         Plattar.messenger.onload("plattar_frame_3", () => {
-            console.log(Plattar.messenger.id + " loaded plattar_frame_3");
+            console.log("loaded plattar_frame_3");
         });
 
         Plattar.messenger.onload("plattar_frame_4", () => {
-            console.log(Plattar.messenger.id + " loaded plattar_frame_4");
+            console.log("loaded plattar_frame_4");
         });
 
+        // this is not needed and is optional, self is always defined
         Plattar.messenger.onload("self", () => {
-            console.log(Plattar.messenger.id + " loaded self");
+            console.log("loaded self");
         });
     </script>
 </body>
