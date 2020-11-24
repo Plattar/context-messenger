@@ -742,7 +742,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                 src.send("__messenger__exec_fnc_result", {
                   function_status: "error",
                   function_name: fname,
-                  function_args: err,
+                  function_args: err.message,
                   instance_id: instanceID
                 });
               });
@@ -970,7 +970,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
             if (data.function_status === "success") {
               promise.accept(data.function_args);
             } else {
-              promise.reject(data.function_args);
+              promise.reject(new Error(data.function_args));
             }
           });
         }

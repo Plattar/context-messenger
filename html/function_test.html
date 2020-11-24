@@ -4,36 +4,77 @@
 <head>
     <title>Function Test</title>
     <script type='text/javascript' src='../build/es2019/plattar-context-messenger.js'></script>
+    <style>
+        div {
+            width: 200px;
+            height: 100px;
+            border: 1px solid black;
+        }
+    </style>
 </head>
 
 <body>
-    <p>This is the Main Frame</p>
+    <div onmousemove="showCoords(event)" onmouseout="clearCoor()"></div>
+
+    <p>Mouse over the rectangle above to get the horizontal and vertical coordinates of your mouse pointer.</p>
+
+    <p id="demo"></p>
+
     <iframe id="plattar_frame_1" src="./function_test_nested.html" title="nested iframe 1"></iframe>
     <iframe id="plattar_frame_2" src="./function_test_nested.html" title="nested iframe 2"></iframe>
-    <iframe id="plattar_frame_3" src="./function_test_nested.html" title="nested iframe 1"></iframe>
-    <iframe id="plattar_frame_4" src="./function_test_nested.html" title="nested iframe 1"></iframe>
+    <iframe id="plattar_frame_3" src="./function_test_nested.html" title="nested iframe 3"></iframe>
+    <iframe id="plattar_frame_4" src="./function_test_nested.html" title="nested iframe 4"></iframe>
 
-    <script type='text/javascript'>
-        Plattar.messenger.onload("plattar_frame_1", () => {
-            console.log("loaded plattar_frame_1");
+    <script>
+        var frames = [false, false, false, false];
 
-            Plattar.messenger.plattar_frame_1.child_add_fnc(1, 2).then((res) => {
-                console.log("plattar_frame_1 adding 1, 2 and result is " + res);
-            }).catch((err) => {
-                console.error(err);
+        function showCoords(event) {
+            var x = event.clientX;
+            var y = event.clientY;
+            var coor = "X coords: " + x + ", Y coords: " + y;
+            document.getElementById("demo").innerHTML = coor;
+
+            frames.forEach((frame) => {
+                if (frame) {
+                    // call a function created in the child iframe
+                    Plattar.messenger[frame].render_mouse_coord(x, y).then((res) => {
+                        // do something with return value (returns nothing)
+                    }).catch((err) => {
+                        console.error(err);
+                    });
+                }
             });
+        }
+
+        function clearCoor() {
+            document.getElementById("demo").innerHTML = "stopped";
+
+            frames.forEach((frame) => {
+                if (frame) {
+                    // call a function created in the child iframe
+                    Plattar.messenger[frame].stop_mouse_coord().then((res) => {
+
+                    }).catch((err) => {
+                        console.error(err);
+                    });
+                }
+            });
+        }
+
+        Plattar.messenger.onload("plattar_frame_1", () => {
+            frames[0] = "plattar_frame_1";
         });
 
         Plattar.messenger.onload("plattar_frame_2", () => {
-            console.log("loaded plattar_frame_2");
+            frames[1] = "plattar_frame_2";
         });
 
         Plattar.messenger.onload("plattar_frame_3", () => {
-            console.log("loaded plattar_frame_3");
+            frames[2] = "plattar_frame_3";
         });
 
         Plattar.messenger.onload("plattar_frame_4", () => {
-            console.log("loaded plattar_frame_4");
+            frames[3] = "plattar_frame_4";
         });
     </script>
 </body>

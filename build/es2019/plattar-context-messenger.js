@@ -536,7 +536,7 @@ class Messenger {
                 src.send("__messenger__exec_fnc_result", {
                     function_status: "error",
                     function_name: fname,
-                    function_args: err,
+                    function_args: err.message,
                     instance_id: instanceID
                 });
             });
@@ -729,7 +729,7 @@ class WrappedRemoteFunction {
                 promise.accept(data.function_args);
             }
             else {
-                promise.reject(data.function_args);
+                promise.reject(new Error(data.function_args));
             }
         });
     }

@@ -7,11 +7,18 @@
 </head>
 
 <body>
-    <p>This is an IFrame/Nested Frame</p>
+    <p>Coordinate Passed From Parent.</p>
+
+    <p id="demo"></p>
     <script type='text/javascript'>
         // register a function in the current context
-        Plattar.messenger.self.child_add_fnc = (a, b) => {
-            return a + b;
+        Plattar.messenger.self.render_mouse_coord = (x, y) => {
+            var coor = "X coords: " + x + ", Y coords: " + y;
+            document.getElementById("demo").innerHTML = coor;
+        };
+
+        Plattar.messenger.self.stop_mouse_coord = (x, y) => {
+            document.getElementById("demo").innerHTML = "stopped";
         };
     </script>
 </body>

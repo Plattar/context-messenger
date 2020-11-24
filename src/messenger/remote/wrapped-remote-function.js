@@ -37,7 +37,7 @@ class WrappedRemoteFunction {
                 promise.accept(data.function_args);
             }
             else {
-                promise.reject(data.function_args);
+                promise.reject(new Error(data.function_args));
             }
         });
     }
