@@ -661,12 +661,29 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
               } // pre-defined functions for this object. Don't block access to these.
 
 
-              if (prop === "setup" || prop === "isValid" || prop === "onload" || prop === "_remoteInterface" || prop === "_callback") {
-                return target[prop];
-              }
+              switch (prop) {
+                case "setup":
+                case "isValid":
+                case "onload":
+                case "_remoteInterface":
+                case "_callback":
+                  return target[prop];
 
-              console.log(prop);
-              return target[prop];
+                default:
+                  break;
+              } // on first access, we create a WrappedValue type
+
+
+              if (!target[prop]) {
+                target[prop] = new WrappedFunction(prop);
+              } // return an anonymous function that executes for this variable
+
+
+              return function () {
+                var _target$prop2;
+
+                return (_target$prop2 = target[prop]).exec.apply(_target$prop2, arguments);
+              };
             },
             set: function set(target, prop, value) {
               if (prop === "_remoteInterface" || prop === "_callback") {

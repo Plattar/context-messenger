@@ -481,17 +481,26 @@ class RemoteFunctionList {
                 }
 
                 // pre-defined functions for this object. Don't block access to these.
-                if (prop === "setup" ||
-                    prop === "isValid" ||
-                    prop === "onload" ||
-                    prop === "_remoteInterface" ||
-                    prop === "_callback") {
-                    return target[prop];
+                switch (prop) {
+                    case "setup":
+                    case "isValid":
+                    case "onload":
+                    case "_remoteInterface":
+                    case "_callback":
+                        return target[prop];
+                    default:
+                        break;
                 }
 
-                console.log(prop);
+                // on first access, we create a WrappedValue type
+                if (!target[prop]) {
+                    target[prop] = new WrappedFunction(prop);
+                }
 
-                return target[prop];
+                // return an anonymous function that executes for this variable
+                return (...args) => {
+                    return target[prop].exec(...args);
+                };
             },
             set: (target, prop, value) => {
                 if (prop === "_remoteInterface" || prop === "_callback") {
