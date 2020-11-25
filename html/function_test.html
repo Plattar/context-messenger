@@ -52,7 +52,7 @@
                 if (frame) {
                     // call a function created in the child iframe
                     Plattar.messenger[frame].render_mouse_coord(x, y);
-                    Plattar.messenger[frame].set_background_color(x, y, 0);
+                    Plattar.messenger[frame].set_background_color(x, y, Math.abs(x - y));
                 }
             });
         }
