@@ -630,7 +630,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           this._currentFunctionList = new CurrentFunctionList(); // we still need to confirm if a parent exists and has the messenger
           // framework added.. see _setup() function
 
-          this._parentFunctionList = undefined;
+          this._parentFunctionList = undefined; // these are the pre-registered available child objects
+
+          this._callableList = [];
 
           this._setup();
 
@@ -661,6 +663,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                 case "_setup":
                 case "_registerListeners":
                 case "_id":
+                case "_callableList":
+                case "callables":
                 case "_parentStack":
                   return target[prop];
 
@@ -680,12 +684,17 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           });
         }
         /**
-         * Internal function call to initialise the messenger framework
+         * Returns a list of all callables that have been added to this messenger instance.
+         * NOTE: Not all callables will have the same function definitions
          */
 
 
         _createClass(Messenger, [{
           key: "_setup",
+
+          /**
+           * Internal function call to initialise the messenger framework
+           */
           value: function _setup() {
             this._registerListeners(); // if a parent exists, send a message calling for an initialisation
 
@@ -726,23 +735,32 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
                 default:
                   break;
-              } // initialise the child iframe as a messenger pipe
-
-
-              if (!_this3[iframeID]) {
-                _this3[iframeID] = new RemoteFunctionList(iframeID);
               }
 
-              _this3[iframeID].setup(new RemoteInterface(src.source, src.origin));
+              var remoteList = new RemoteFunctionList(iframeID); // initialise the child iframe as a messenger pipe
+
+              if (!_this3[iframeID]) {
+                _this3[iframeID] = remoteList;
+              }
+
+              _this3[iframeID].setup(new RemoteInterface(src.source, src.origin)); // add the interface to a callable list
+
+
+              _this3._callableList.push(remoteList);
 
               src.send("__messenger__parent_init");
             });
             GlobalEventHandler.instance().listen("__messenger__parent_init", function (src, data) {
+              var remoteList = new RemoteFunctionList("parent");
+
               if (!_this3["parent"]) {
-                _this3["parent"] = new RemoteFunctionList("parent");
+                _this3["parent"] = remoteList;
               }
 
-              _this3["parent"].setup(new RemoteInterface(src.source, src.origin));
+              _this3["parent"].setup(new RemoteInterface(src.source, src.origin)); // add the interface to a callable list
+
+
+              _this3._callableList.push(remoteList);
             }); // this listener will fire remotely to execute a function in the current
             // context
 
@@ -769,6 +787,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                 });
               });
             });
+          }
+        }, {
+          key: "callables",
+          get: function get() {
+            return this._callableList;
           }
         }]);
 

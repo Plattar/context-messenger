@@ -445,6 +445,9 @@ class Messenger {
         // framework added.. see _setup() function
         this._parentFunctionList = undefined;
 
+        // these are the pre-registered available child objects
+        this._callableList = [];
+
         this._setup();
 
         return new Proxy(this, {
@@ -470,6 +473,8 @@ class Messenger {
                     case "_setup":
                     case "_registerListeners":
                     case "_id":
+                    case "_callableList":
+                    case "callables":
                     case "_parentStack": return target[prop];
                     default:
                         break;
@@ -486,6 +491,14 @@ class Messenger {
                 return target[prop];
             }
         });
+    }
+
+    /**
+     * Returns a list of all callables that have been added to this messenger instance.
+     * NOTE: Not all callables will have the same function definitions
+     */
+    get callables() {
+        return this._callableList;
     }
 
     /**
@@ -521,22 +534,32 @@ class Messenger {
                     break;
             }
 
+            const remoteList = new RemoteFunctionList(iframeID);
+
             // initialise the child iframe as a messenger pipe
             if (!this[iframeID]) {
-                this[iframeID] = new RemoteFunctionList(iframeID);
+                this[iframeID] = remoteList;
             }
 
             this[iframeID].setup(new RemoteInterface(src.source, src.origin));
+
+            // add the interface to a callable list
+            this._callableList.push(remoteList);
 
             src.send("__messenger__parent_init");
         });
 
         GlobalEventHandler.instance().listen("__messenger__parent_init", (src, data) => {
+            const remoteList = new RemoteFunctionList("parent");
+
             if (!this["parent"]) {
-                this["parent"] = new RemoteFunctionList("parent");
+                this["parent"] = remoteList;
             }
 
             this["parent"].setup(new RemoteInterface(src.source, src.origin));
+
+            // add the interface to a callable list
+            this._callableList.push(remoteList);
         });
 
         // this listener will fire remotely to execute a function in the current
