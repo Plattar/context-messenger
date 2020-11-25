@@ -20,8 +20,12 @@
         };
 
         Plattar.messenger.self.stop_mouse_coord = () => {
-            document.getElementById("timestamp").innerHTML = Date.now();
+            var timestamp = Date.now();
+
+            document.getElementById("timestamp").innerHTML = timestamp;
             document.getElementById("demo").innerHTML = "stopped";
+
+            return "child timestamp = " + timestamp;
         };
     </script>
 </body>

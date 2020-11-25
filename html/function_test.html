@@ -21,9 +21,13 @@
     <p id="demo"></p>
     <p id="timestamp"></p>
 
+    <p id="plattar_frame_1_ts"></p>
     <iframe id="plattar_frame_1" src="./function_test_nested.html" title="nested iframe 1"></iframe>
+    <p id="plattar_frame_2_ts"></p>
     <iframe id="plattar_frame_2" src="./function_test_nested.html" title="nested iframe 2"></iframe>
+    <p id="plattar_frame_3_ts"></p>
     <iframe id="plattar_frame_3" src="./function_test_nested.html" title="nested iframe 3"></iframe>
+    <p id="plattar_frame_4_ts"></p>
     <iframe id="plattar_frame_4" src="./function_test_nested.html" title="nested iframe 4"></iframe>
 
     <script>
@@ -55,7 +59,7 @@
                 if (frame) {
                     // call a function created in the child iframe
                     Plattar.messenger[frame].stop_mouse_coord().then((res) => {
-
+                        document.getElementById(frame + "_ts").innerHTML = res;
                     }).catch((err) => {
                         console.error(err);
                     });
