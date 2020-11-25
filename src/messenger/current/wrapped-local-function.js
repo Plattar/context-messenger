@@ -1,3 +1,5 @@
+const Util = require("../util/util.js");
+
 /**
  * WrappedLocalFunction represents a container that holds and maintains a specific function
  * that was defined in the current web context. It can also be executed by other web contexts
@@ -35,7 +37,21 @@ class WrappedLocalFunction {
 
             try {
                 // otherwise execute the function
-                return accept(this._execute(...args));
+                const rObject = this._execute(...args);
+
+                // we need to check if the returned object is a Promise, if so, handle it
+                // differently. This can happen if the function wants to execute asyn
+                if (Util.isPromise(rObject)) {
+                    rObject.then((res) => {
+                        return accept(res);
+                    }).catch((err) => {
+                        return reject(err);
+                    });
+                }
+                else {
+                    // otherwise, its a non async object so just execute and return the results
+                    return accept(rObject);
+                }
             }
             catch (e) {
                 return reject(e);
