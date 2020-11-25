@@ -1,11 +1,17 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Plattar = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
-const messenger = require("./messenger/messenger.js");
-const memory = require("./memory/memory.js");
+const Messenger = require("./messenger/messenger.js");
+const Memory = require("./memory/memory.js");
+
+// create our instances which we only need one each
+const messengerInstance = new Messenger();
+
+// memory requires the messenger interface to function correctly
+const memoryInstance = new Memory(messengerInstance);
 
 module.exports = {
-    messenger,
-    memory
+    messenger: messengerInstance,
+    memory: memoryInstance
 }
 },{"./memory/memory.js":2,"./messenger/messenger.js":9}],2:[function(require,module,exports){
 const PermanentMemory = require("./permanent-memory");
@@ -16,7 +22,7 @@ const TemporaryMemory = require("./temporary-memory");
  * iframe contexts
  */
 class Memory {
-    constructor() {
+    constructor(messengerInstance) {
         this._tempMemory = new TemporaryMemory();
         this._permMemory = new PermanentMemory();
     }
@@ -30,7 +36,7 @@ class Memory {
     }
 }
 
-module.exports = new Memory();
+module.exports = Memory;
 },{"./permanent-memory":3,"./temporary-memory":4}],3:[function(require,module,exports){
 const WrappedValue = require("./wrapped-value");
 
@@ -544,7 +550,7 @@ class Messenger {
     }
 }
 
-module.exports = new Messenger();
+module.exports = Messenger;
 },{"./current/current-function-list":6,"./global-event-handler.js":8,"./remote-interface":10,"./remote/remote-function-list":11,"./util/util.js":13}],10:[function(require,module,exports){
 /**
  * Provides a single useful interface for performing remote function calls

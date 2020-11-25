@@ -6,7 +6,7 @@ const TemporaryMemory = require("./temporary-memory");
  * iframe contexts
  */
 class Memory {
-    constructor() {
+    constructor(messengerInstance) {
         this._tempMemory = new TemporaryMemory();
         this._permMemory = new PermanentMemory();
     }
@@ -20,4 +20,4 @@ class Memory {
     }
 }
 
-module.exports = new Memory();
+module.exports = Memory;

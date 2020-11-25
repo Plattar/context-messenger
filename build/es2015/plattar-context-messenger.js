@@ -80,13 +80,17 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     1: [function (require, module, exports) {
       "use strict";
 
-      var messenger = require("./messenger/messenger.js");
+      var Messenger = require("./messenger/messenger.js");
 
-      var memory = require("./memory/memory.js");
+      var Memory = require("./memory/memory.js"); // create our instances which we only need one each
 
+
+      var messengerInstance = new Messenger(); // memory requires the messenger interface to function correctly
+
+      var memoryInstance = new Memory(messengerInstance);
       module.exports = {
-        messenger: messenger,
-        memory: memory
+        messenger: messengerInstance,
+        memory: memoryInstance
       };
     }, {
       "./memory/memory.js": 2,
@@ -103,7 +107,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 
       var Memory = /*#__PURE__*/function () {
-        function Memory() {
+        function Memory(messengerInstance) {
           _classCallCheck(this, Memory);
 
           this._tempMemory = new TemporaryMemory();
@@ -125,7 +129,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         return Memory;
       }();
 
-      module.exports = new Memory();
+      module.exports = Memory;
     }, {
       "./permanent-memory": 3,
       "./temporary-memory": 4
@@ -753,7 +757,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         return Messenger;
       }();
 
-      module.exports = new Messenger();
+      module.exports = Messenger;
     }, {
       "./current/current-function-list": 6,
       "./global-event-handler.js": 8,
