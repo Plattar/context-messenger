@@ -57,7 +57,7 @@ class GlobalEventHandler {
     }
 }
 
-GlobalEventHandler.default = () => {
+GlobalEventHandler.instance = () => {
     if (!GlobalEventHandler._default) {
         GlobalEventHandler._default = new GlobalEventHandler();
     }

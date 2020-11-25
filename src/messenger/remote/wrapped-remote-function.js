@@ -1,5 +1,5 @@
 const Util = require("../util/util.js");
-const global = require("../global-event-handler.js");
+const GlobalEventHandler = require("../global-event-handler.js");
 
 /**
  * WrappedRemoteFunction represents a container that holds and maintains a specific function
@@ -13,7 +13,8 @@ class WrappedRemoteFunction {
 
         this._callInstances = {};
 
-        global.default().listen("__messenger__exec_fnc_result", (src, data) => {
+        // listen for function execution results
+        GlobalEventHandler.instance().listen("__messenger__exec_fnc_result", (src, data) => {
             const instanceID = data.instance_id;
 
             // the function name must match

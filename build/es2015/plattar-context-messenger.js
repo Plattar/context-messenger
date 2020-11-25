@@ -568,7 +568,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         return GlobalEventHandler;
       }();
 
-      GlobalEventHandler["default"] = function () {
+      GlobalEventHandler.instance = function () {
         if (!GlobalEventHandler._default) {
           GlobalEventHandler._default = new GlobalEventHandler();
         }
@@ -589,7 +589,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       var Util = require("./util/util.js");
 
-      var global = require("./global-event-handler.js");
+      var GlobalEventHandler = require("./global-event-handler.js");
       /**
        * Messenger is a singleton that allows calling functions in multiple
        * contexts
@@ -683,7 +683,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           value: function _registerListeners() {
             var _this3 = this;
 
-            global["default"]().listen("__messenger__child_init", function (src, data) {
+            GlobalEventHandler.instance().listen("__messenger__child_init", function (src, data) {
               var iframeID = src.id; // check reserved key list
 
               switch (iframeID) {
@@ -715,7 +715,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
               src.send("__messenger__parent_init");
             });
-            global["default"]().listen("__messenger__parent_init", function (src, data) {
+            GlobalEventHandler.instance().listen("__messenger__parent_init", function (src, data) {
               if (!_this3["parent"]) {
                 _this3["parent"] = new RemoteFunctionList("parent");
               }
@@ -724,7 +724,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
             }); // this listener will fire remotely to execute a function in the current
             // context
 
-            global["default"]().listen("__messenger__exec_fnc", function (src, data) {
+            GlobalEventHandler.instance().listen("__messenger__exec_fnc", function (src, data) {
               var _Plattar$messenger$se;
 
               var instanceID = data.instance_id;
@@ -933,7 +933,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     12: [function (require, module, exports) {
       var Util = require("../util/util.js");
 
-      var global = require("../global-event-handler.js");
+      var GlobalEventHandler = require("../global-event-handler.js");
       /**
        * WrappedRemoteFunction represents a container that holds and maintains a specific function
        * that can be called by any context. This particular container executes and handles remote 
@@ -949,8 +949,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
           this._funcName = funcName;
           this._remoteInterface = remoteInterface;
-          this._callInstances = {};
-          global["default"]().listen("__messenger__exec_fnc_result", function (src, data) {
+          this._callInstances = {}; // listen for function execution results
+
+          GlobalEventHandler.instance().listen("__messenger__exec_fnc_result", function (src, data) {
             var instanceID = data.instance_id; // the function name must match
 
             if (data.function_name !== _this4._funcName) {

@@ -388,7 +388,7 @@ class GlobalEventHandler {
     }
 }
 
-GlobalEventHandler.default = () => {
+GlobalEventHandler.instance = () => {
     if (!GlobalEventHandler._default) {
         GlobalEventHandler._default = new GlobalEventHandler();
     }
@@ -402,7 +402,7 @@ const CurrentFunctionList = require("./current/current-function-list");
 const RemoteInterface = require("./remote-interface");
 const RemoteFunctionList = require("./remote/remote-function-list");
 const Util = require("./util/util.js");
-const global = require("./global-event-handler.js");
+const GlobalEventHandler = require("./global-event-handler.js");
 
 /**
  * Messenger is a singleton that allows calling functions in multiple
@@ -485,7 +485,7 @@ class Messenger {
      * Register all critical listener interfaces so the framework can function correctly
      */
     _registerListeners() {
-        global.default().listen("__messenger__child_init", (src, data) => {
+        GlobalEventHandler.instance().listen("__messenger__child_init", (src, data) => {
             const iframeID = src.id;
 
             // check reserved key list
@@ -509,7 +509,7 @@ class Messenger {
             src.send("__messenger__parent_init");
         });
 
-        global.default().listen("__messenger__parent_init", (src, data) => {
+        GlobalEventHandler.instance().listen("__messenger__parent_init", (src, data) => {
             if (!this["parent"]) {
                 this["parent"] = new RemoteFunctionList("parent");
             }
@@ -519,7 +519,7 @@ class Messenger {
 
         // this listener will fire remotely to execute a function in the current
         // context
-        global.default().listen("__messenger__exec_fnc", (src, data) => {
+        GlobalEventHandler.instance().listen("__messenger__exec_fnc", (src, data) => {
             const instanceID = data.instance_id;
             const args = data.function_args;
             const fname = data.function_name;
@@ -691,7 +691,7 @@ class RemoteFunctionList {
 module.exports = RemoteFunctionList;
 },{"./wrapped-remote-function":12}],12:[function(require,module,exports){
 const Util = require("../util/util.js");
-const global = require("../global-event-handler.js");
+const GlobalEventHandler = require("../global-event-handler.js");
 
 /**
  * WrappedRemoteFunction represents a container that holds and maintains a specific function
@@ -705,7 +705,8 @@ class WrappedRemoteFunction {
 
         this._callInstances = {};
 
-        global.default().listen("__messenger__exec_fnc_result", (src, data) => {
+        // listen for function execution results
+        GlobalEventHandler.instance().listen("__messenger__exec_fnc_result", (src, data) => {
             const instanceID = data.instance_id;
 
             // the function name must match
