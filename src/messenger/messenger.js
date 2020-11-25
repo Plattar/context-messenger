@@ -127,9 +127,6 @@ class Messenger {
             }
 
             this["parent"].setup(new RemoteInterface(src.source, src.origin));
-
-            // add the interface to the broadcaster
-            this._broadcaster._push("parent");
         });
 
         // this listener will fire remotely to execute a function in the current
