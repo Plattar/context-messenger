@@ -264,6 +264,8 @@ class CurrentFunctionList {
 
 module.exports = CurrentFunctionList;
 },{"./wrapped-local-function":7}],7:[function(require,module,exports){
+const Util = require("../util/util.js");
+
 /**
  * WrappedLocalFunction represents a container that holds and maintains a specific function
  * that was defined in the current web context. It can also be executed by other web contexts
@@ -301,7 +303,21 @@ class WrappedLocalFunction {
 
             try {
                 // otherwise execute the function
-                return accept(this._execute(...args));
+                const rObject = this._execute(...args);
+
+                // we need to check if the returned object is a Promise, if so, handle it
+                // differently. This can happen if the function wants to execute asyn
+                if (Util.isPromise(rObject)) {
+                    rObject.then((res) => {
+                        return accept(res);
+                    }).catch((err) => {
+                        return reject(err);
+                    });
+                }
+                else {
+                    // otherwise, its a non async object so just execute and return the results
+                    return accept(rObject);
+                }
             }
             catch (e) {
                 return reject(e);
@@ -334,7 +350,7 @@ class WrappedLocalFunction {
 }
 
 module.exports = WrappedLocalFunction;
-},{}],8:[function(require,module,exports){
+},{"../util/util.js":13}],8:[function(require,module,exports){
 const RemoteInterface = require("./remote-interface.js");
 
 /**
@@ -779,9 +795,18 @@ module.exports = WrappedRemoteFunction;
 },{"../global-event-handler.js":8,"../util/util.js":13}],13:[function(require,module,exports){
 class Util {
 
-    // generate a quick, random ID thats useful for message digests and class checks
+    /**
+     * generate a quick, random ID thats useful for message digests and class checks
+     */
     static id() {
         return Math.abs(Math.floor(Math.random() * 10000000000000));
+    }
+
+    /**
+     * checks if the provided object is a type of Promise object
+     */
+    static isPromise(obj) {
+        return !!obj && (typeof obj === "object" || typeof obj === "function") && typeof obj.then === "function";
     }
 }
 

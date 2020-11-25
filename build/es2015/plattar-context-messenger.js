@@ -413,11 +413,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       "./wrapped-local-function": 7
     }],
     7: [function (require, module, exports) {
+      var Util = require("../util/util.js");
       /**
        * WrappedLocalFunction represents a container that holds and maintains a specific function
        * that was defined in the current web context. It can also be executed by other web contexts
        * using the Messenger framework.
        */
+
+
       var WrappedLocalFunction = /*#__PURE__*/function () {
         function WrappedLocalFunction(funcName) {
           _classCallCheck(this, WrappedLocalFunction);
@@ -467,7 +470,20 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
               try {
                 // otherwise execute the function
-                return accept(_this._execute.apply(_this, args));
+                var rObject = _this._execute.apply(_this, args); // we need to check if the returned object is a Promise, if so, handle it
+                // differently. This can happen if the function wants to execute asyn
+
+
+                if (Util.isPromise(rObject)) {
+                  rObject.then(function (res) {
+                    return accept(res);
+                  })["catch"](function (err) {
+                    return reject(err);
+                  });
+                } else {
+                  // otherwise, its a non async object so just execute and return the results
+                  return accept(rObject);
+                }
               } catch (e) {
                 return reject(e);
               }
@@ -505,7 +521,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       }();
 
       module.exports = WrappedLocalFunction;
-    }, {}],
+    }, {
+      "../util/util.js": 13
+    }],
     8: [function (require, module, exports) {
       var RemoteInterface = require("./remote-interface.js");
       /**
@@ -1037,9 +1055,21 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
         _createClass(Util, null, [{
           key: "id",
-          // generate a quick, random ID thats useful for message digests and class checks
+
+          /**
+           * generate a quick, random ID thats useful for message digests and class checks
+           */
           value: function id() {
             return Math.abs(Math.floor(Math.random() * 10000000000000));
+          }
+          /**
+           * checks if the provided object is a type of Promise object
+           */
+
+        }, {
+          key: "isPromise",
+          value: function isPromise(obj) {
+            return !!obj && (_typeof(obj) === "object" || typeof obj === "function") && typeof obj.then === "function";
           }
         }]);
 
