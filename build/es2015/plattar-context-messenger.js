@@ -887,6 +887,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                 case "onload":
                 case "_remoteInterface":
                 case "_callback":
+                case "name":
+                case "_remoteName":
                   return target[prop];
 
                 default:
@@ -942,6 +944,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
             if (this.isValid()) {
               this._callback();
             }
+          }
+        }, {
+          key: "name",
+          get: function get() {
+            return this._remoteName;
           }
         }]);
 
