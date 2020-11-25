@@ -32,6 +32,8 @@ class RemoteFunctionList {
                     case "onload":
                     case "_remoteInterface":
                     case "_callback":
+                    case "name":
+                    case "_remoteName":
                         return target[prop];
                     default:
                         break;
@@ -69,6 +71,10 @@ class RemoteFunctionList {
         if (this._callback) {
             this._callback();
         }
+    }
+
+    get name() {
+        return this._remoteName;
     }
 
     isValid() {
