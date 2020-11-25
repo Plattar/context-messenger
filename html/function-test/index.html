@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Function Test</title>
+    <script type='text/javascript' src='../../build/es2019/plattar-context-messenger.js'></script>
+    <style>
+        div {
+            width: 200px;
+            height: 100px;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <div onmousemove="showCoords(event)" onmouseout="clearCoor()"></div>
+
+    <p>Mouse over the rectangle above to get the horizontal and vertical coordinates of your mouse pointer.</p>
+
+    <p id="demo"></p>
+    <p id="timestamp"></p>
+
+    <p id="plattar_frame_1_ts"></p>
+    <p id="plattar_frame_1_col"></p>
+    <iframe id="plattar_frame_1" src="./nested-page.html" title="nested iframe 1"></iframe>
+    <p id="plattar_frame_2_ts"></p>
+    <p id="plattar_frame_2_col"></p>
+    <iframe id="plattar_frame_2" src="./nested-page.html" title="nested iframe 2"></iframe>
+    <p id="plattar_frame_3_ts"></p>
+    <p id="plattar_frame_3_col"></p>
+    <iframe id="plattar_frame_3" src="./nested-page.html" title="nested iframe 3"></iframe>
+    <p id="plattar_frame_4_ts"></p>
+    <p id="plattar_frame_4_col"></p>
+    <iframe id="plattar_frame_4" src="./nested-page.html" title="nested iframe 4"></iframe>
+
+    <script>
+        // this is called by the child frame
+        Plattar.messenger.self.set_final_color = (frame, color) => {
+            document.getElementById(frame + "_col").innerHTML = color;
+        };
+
+        var frames = [false, false, false, false];
+
+        function showCoords(event) {
+            var x = event.clientX;
+            var y = event.clientY;
+            var coor = "X coords: " + x + ", Y coords: " + y;
+            document.getElementById("demo").innerHTML = coor;
+
+            frames.forEach((frame) => {
+                if (frame) {
+                    // call a function created in the child iframe
+                    Plattar.messenger[frame].render_mouse_coord(x, y);
+                    Plattar.messenger[frame].set_background_color(x, y, Math.abs(x - y));
+                }
+            });
+        }
+
+        function clearCoor() {
+            document.getElementById("demo").innerHTML = "stopped";
+            document.getElementById("timestamp").innerHTML = Date.now();
+
+            frames.forEach((frame) => {
+                if (frame) {
+                    // call a function created in the child iframe
+                    Plattar.messenger[frame].stop_mouse_coord().then((res) => {
+                        document.getElementById(frame + "_ts").innerHTML = res;
+                    }).catch((err) => {
+                        console.error(err);
+                    });
+                }
+            });
+        }
+
+        Plattar.messenger.onload("plattar_frame_1", () => {
+            frames[0] = "plattar_frame_1";
+
+            Plattar.messenger.plattar_frame_1.set_name("plattar_frame_1");
+        });
+
+        Plattar.messenger.onload("plattar_frame_2", () => {
+            frames[1] = "plattar_frame_2";
+
+            Plattar.messenger.plattar_frame_2.set_name("plattar_frame_2");
+        });
+
+        Plattar.messenger.onload("plattar_frame_3", () => {
+            frames[2] = "plattar_frame_3";
+
+            Plattar.messenger.plattar_frame_3.set_name("plattar_frame_3");
+        });
+
+        Plattar.messenger.onload("plattar_frame_4", () => {
+            frames[3] = "plattar_frame_4";
+
+            Plattar.messenger.plattar_frame_4.set_name("plattar_frame_4");
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Function Test</title>
+    <script type='text/javascript' src='../../build/es2019/plattar-context-messenger.js'></script>
+</head>
+
+<body>
+    <p id="demo"></p>
+    <p id="timestamp"></p>
+
+    <script type='text/javascript'>
+        function componentToHex(c) {
+            var hex = c.toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        }
+
+        var appName = "default";
+
+        // register a function in the current context
+        Plattar.messenger.self.set_name = (name) => {
+            appName = name;
+        };
+
+        Plattar.messenger.self.render_mouse_coord = (x, y) => {
+            var coor = "X coords: " + x + ", Y coords: " + y;
+            document.getElementById("demo").innerHTML = coor;
+        };
+
+        Plattar.messenger.self.stop_mouse_coord = () => {
+            var timestamp = Date.now();
+
+            document.getElementById("timestamp").innerHTML = timestamp;
+            document.getElementById("demo").innerHTML = "stopped";
+
+            // this calls a function on the parent frame and tests the scenario
+            // of the child calling a parent function
+            Plattar.messenger.parent.set_final_color(appName, document.body.style.backgroundColor);
+
+            return "child timestamp = " + timestamp;
+        };
+
+        Plattar.messenger.self.set_background_color = (r, g, b) => {
+            document.body.style.backgroundColor = rgbToHex(r, g, b);
+        };
+    </script>
+</body>
+
+</html>

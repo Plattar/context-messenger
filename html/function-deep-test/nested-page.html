@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Function Test</title>
+    <script type='text/javascript' src='../../build/es2019/plattar-context-messenger.js'></script>
+</head>
+
+<body>
+
+    <p>Coordinate Passed From Parent to Child</p>
+
+    <iframe id="frame_1" src="./deep-nested-page.html" title="nested iframe 1"></iframe>
+
+    <script type='text/javascript'>
+        // register a function in the current context
+        Plattar.messenger.self.set_name = (name) => {
+            return new Promise((accept, reject) => {
+                Plattar.messenger.onload("frame_1", () => {
+                    Plattar.messenger.frame_1.set_name(name).then((res) => {
+                        accept(res);
+                    }).catch((err) => {
+                        reject(err);
+                    });
+                });
+            });
+        };
+
+        Plattar.messenger.self.render_mouse_coord = (x, y) => {
+            return new Promise((accept, reject) => {
+                Plattar.messenger.frame_1.render_mouse_coord(x, y).then((res) => {
+                    accept(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        };
+
+        Plattar.messenger.self.stop_mouse_coord = () => {
+            return new Promise((accept, reject) => {
+                Plattar.messenger.frame_1.stop_mouse_coord().then((res) => {
+                    accept(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        };
+
+        Plattar.messenger.self.set_background_color = (r, g, b) => {
+            return new Promise((accept, reject) => {
+                Plattar.messenger.frame_1.set_background_color(r, g, b).then((res) => {
+                    accept(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        };
+
+        // this is called by the child frame
+        Plattar.messenger.self.set_final_color = (frame, color) => {
+            Plattar.messenger.parent.set_final_color(frame, color);
+        };
+    </script>
+</body>
+
+</html>
