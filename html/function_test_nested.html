@@ -22,7 +22,13 @@
             return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
         }
 
+        var appName = "default";
+
         // register a function in the current context
+        Plattar.messenger.self.set_name = (name) => {
+            appName = name;
+        };
+
         Plattar.messenger.self.render_mouse_coord = (x, y) => {
             var coor = "X coords: " + x + ", Y coords: " + y;
             document.getElementById("demo").innerHTML = coor;
@@ -33,6 +39,10 @@
 
             document.getElementById("timestamp").innerHTML = timestamp;
             document.getElementById("demo").innerHTML = "stopped";
+
+            // this calls a function on the parent frame and tests the scenario
+            // of the child calling a parent function
+            Plattar.messenger.parent.set_final_color(appName, document.body.style.backgroundColor);
 
             return "child timestamp = " + timestamp;
         };
