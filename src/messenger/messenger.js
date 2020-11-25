@@ -3,6 +3,7 @@ const RemoteInterface = require("./remote-interface");
 const RemoteFunctionList = require("./remote/remote-function-list");
 const Util = require("./util/util.js");
 const GlobalEventHandler = require("./global-event-handler.js");
+const Broadcaster = require("./broadcaster.js");
 
 /**
  * Messenger is a singleton that allows calling functions in multiple
@@ -18,6 +19,9 @@ class Messenger {
 
         // allow adding local functions immedietly
         this._currentFunctionList = new CurrentFunctionList();
+
+        // allows calling functions on everything
+        this._broadcaster = new Broadcaster(this);
 
         // we still need to confirm if a parent exists and has the messenger
         // framework added.. see _setup() function
@@ -48,11 +52,11 @@ class Messenger {
                 switch (prop) {
                     case "id": return target._id;
                     case "self": return target._currentFunctionList;
+                    case "broadcast": return target._broadcaster;
                     case "_setup":
                     case "_registerListeners":
                     case "_id":
-                    case "_callableList":
-                    case "callables":
+                    case "_broadcaster":
                     case "_parentStack": return target[prop];
                     default:
                         break;
@@ -69,14 +73,6 @@ class Messenger {
                 return target[prop];
             }
         });
-    }
-
-    /**
-     * Returns a list of all callables that have been added to this messenger instance.
-     * NOTE: Not all callables will have the same function definitions
-     */
-    get callables() {
-        return this._callableList;
     }
 
     /**
@@ -112,32 +108,28 @@ class Messenger {
                     break;
             }
 
-            const remoteList = new RemoteFunctionList(iframeID);
-
             // initialise the child iframe as a messenger pipe
             if (!this[iframeID]) {
-                this[iframeID] = remoteList;
+                this[iframeID] = new RemoteFunctionList(iframeID);
             }
 
             this[iframeID].setup(new RemoteInterface(src.source, src.origin));
 
-            // add the interface to a callable list
-            this._callableList.push(remoteList);
+            // add the interface to the broadcaster
+            this._broadcaster._push(iframeID);
 
             src.send("__messenger__parent_init");
         });
 
         GlobalEventHandler.instance().listen("__messenger__parent_init", (src, data) => {
-            const remoteList = new RemoteFunctionList("parent");
-
             if (!this["parent"]) {
-                this["parent"] = remoteList;
+                this["parent"] = new RemoteFunctionList("parent");
             }
 
             this["parent"].setup(new RemoteInterface(src.source, src.origin));
 
-            // add the interface to a callable list
-            this._callableList.push(remoteList);
+            // add the interface to the broadcaster
+            this._broadcaster._push("parent");
         });
 
         // this listener will fire remotely to execute a function in the current

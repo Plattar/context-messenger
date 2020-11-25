@@ -94,7 +94,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       };
     }, {
       "./memory/memory.js": 2,
-      "./messenger/messenger.js": 9
+      "./messenger/messenger.js": 10
     }],
     2: [function (require, module, exports) {
       var PermanentMemory = require("./permanent-memory");
@@ -348,6 +348,66 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       module.exports = WrappedValue;
     }, {}],
     6: [function (require, module, exports) {
+      /**
+       * Broadcaster is used to call functions in multiple contexts at the
+       * same time. This can be useful without having to handle complex logic
+       * in the application side.
+       * 
+       * See Plattar.messenger.broadcast
+       */
+      var Broadcaster = /*#__PURE__*/function () {
+        function Broadcaster(messengerInstance) {
+          _classCallCheck(this, Broadcaster);
+
+          this._messengerInstance = messengerInstance;
+          this._interfaces = [];
+          return new Proxy(this, {
+            get: function get(target, prop, receiver) {
+              switch (prop) {
+                case "_push":
+                case "_interfaces":
+                  return target[prop];
+
+                default:
+                  break;
+              } // execute the desired function on all available stacks
+
+
+              return function () {
+                for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+                  args[_key] = arguments[_key];
+                }
+
+                var interfaces = target._interfaces;
+                var promises = [];
+                interfaces.forEach(function (callable) {
+                  var _target$_messengerIns;
+
+                  promises.push((_target$_messengerIns = target._messengerInstance[callable])[prop].apply(_target$_messengerIns, args));
+                });
+                return Promise.allSettled(promises);
+              };
+            }
+          });
+        }
+        /**
+         * Adds a new callable interface ID to the list of callables
+         */
+
+
+        _createClass(Broadcaster, [{
+          key: "_push",
+          value: function _push(interfaceID) {
+            this._interfaces.push(interfaceID);
+          }
+        }]);
+
+        return Broadcaster;
+      }();
+
+      module.exports = Broadcaster;
+    }, {}],
+    7: [function (require, module, exports) {
       var WrappedFunction = require("./wrapped-local-function");
 
       var CurrentFunctionList = function CurrentFunctionList() {
@@ -410,9 +470,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = CurrentFunctionList;
     }, {
-      "./wrapped-local-function": 7
+      "./wrapped-local-function": 8
     }],
-    7: [function (require, module, exports) {
+    8: [function (require, module, exports) {
       var Util = require("../util/util.js");
       /**
        * WrappedLocalFunction represents a container that holds and maintains a specific function
@@ -437,8 +497,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(WrappedLocalFunction, [{
           key: "_execute",
           value: function _execute() {
-            for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-              args[_key] = arguments[_key];
+            for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+              args[_key2] = arguments[_key2];
             }
 
             var rData = this._value.apply(this, args);
@@ -459,8 +519,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           value: function exec() {
             var _this = this;
 
-            for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-              args[_key2] = arguments[_key2];
+            for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+              args[_key3] = arguments[_key3];
             }
 
             return new Promise(function (accept, reject) {
@@ -522,9 +582,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = WrappedLocalFunction;
     }, {
-      "../util/util.js": 13
+      "../util/util.js": 14
     }],
-    8: [function (require, module, exports) {
+    9: [function (require, module, exports) {
       var RemoteInterface = require("./remote-interface.js");
       /**
        * This is a singleton class that handles events on a global basis. Allows
@@ -600,9 +660,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = GlobalEventHandler;
     }, {
-      "./remote-interface.js": 10
+      "./remote-interface.js": 11
     }],
-    9: [function (require, module, exports) {
+    10: [function (require, module, exports) {
       var CurrentFunctionList = require("./current/current-function-list");
 
       var RemoteInterface = require("./remote-interface");
@@ -612,6 +672,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       var Util = require("./util/util.js");
 
       var GlobalEventHandler = require("./global-event-handler.js");
+
+      var Broadcaster = require("./broadcaster.js");
       /**
        * Messenger is a singleton that allows calling functions in multiple
        * contexts
@@ -627,7 +689,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
           this._parentStack = RemoteInterface["default"](); // allow adding local functions immedietly
 
-          this._currentFunctionList = new CurrentFunctionList(); // we still need to confirm if a parent exists and has the messenger
+          this._currentFunctionList = new CurrentFunctionList(); // allows calling functions on everything
+
+          this._broadcaster = new Broadcaster(this); // we still need to confirm if a parent exists and has the messenger
           // framework added.. see _setup() function
 
           this._parentFunctionList = undefined; // these are the pre-registered available child objects
@@ -660,11 +724,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                 case "self":
                   return target._currentFunctionList;
 
+                case "broadcast":
+                  return target._broadcaster;
+
                 case "_setup":
                 case "_registerListeners":
                 case "_id":
-                case "_callableList":
-                case "callables":
+                case "_broadcaster":
                 case "_parentStack":
                   return target[prop];
 
@@ -684,17 +750,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           });
         }
         /**
-         * Returns a list of all callables that have been added to this messenger instance.
-         * NOTE: Not all callables will have the same function definitions
+         * Internal function call to initialise the messenger framework
          */
 
 
         _createClass(Messenger, [{
           key: "_setup",
-
-          /**
-           * Internal function call to initialise the messenger framework
-           */
           value: function _setup() {
             this._registerListeners(); // if a parent exists, send a message calling for an initialisation
 
@@ -735,32 +796,29 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
                 default:
                   break;
-              }
+              } // initialise the child iframe as a messenger pipe
 
-              var remoteList = new RemoteFunctionList(iframeID); // initialise the child iframe as a messenger pipe
 
               if (!_this3[iframeID]) {
-                _this3[iframeID] = remoteList;
+                _this3[iframeID] = new RemoteFunctionList(iframeID);
               }
 
-              _this3[iframeID].setup(new RemoteInterface(src.source, src.origin)); // add the interface to a callable list
+              _this3[iframeID].setup(new RemoteInterface(src.source, src.origin)); // add the interface to the broadcaster
 
 
-              _this3._callableList.push(remoteList);
+              _this3._broadcaster._push(iframeID);
 
               src.send("__messenger__parent_init");
             });
             GlobalEventHandler.instance().listen("__messenger__parent_init", function (src, data) {
-              var remoteList = new RemoteFunctionList("parent");
-
               if (!_this3["parent"]) {
-                _this3["parent"] = remoteList;
+                _this3["parent"] = new RemoteFunctionList("parent");
               }
 
-              _this3["parent"].setup(new RemoteInterface(src.source, src.origin)); // add the interface to a callable list
+              _this3["parent"].setup(new RemoteInterface(src.source, src.origin)); // add the interface to the broadcaster
 
 
-              _this3._callableList.push(remoteList);
+              _this3._broadcaster._push("parent");
             }); // this listener will fire remotely to execute a function in the current
             // context
 
@@ -788,11 +846,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
               });
             });
           }
-        }, {
-          key: "callables",
-          get: function get() {
-            return this._callableList;
-          }
         }]);
 
         return Messenger;
@@ -800,13 +853,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = Messenger;
     }, {
-      "./current/current-function-list": 6,
-      "./global-event-handler.js": 8,
-      "./remote-interface": 10,
-      "./remote/remote-function-list": 11,
-      "./util/util.js": 13
+      "./broadcaster.js": 6,
+      "./current/current-function-list": 7,
+      "./global-event-handler.js": 9,
+      "./remote-interface": 11,
+      "./remote/remote-function-list": 12,
+      "./util/util.js": 14
     }],
-    10: [function (require, module, exports) {
+    11: [function (require, module, exports) {
       /**
        * Provides a single useful interface for performing remote function calls
        */
@@ -876,7 +930,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = RemoteInterface;
     }, {}],
-    11: [function (require, module, exports) {
+    12: [function (require, module, exports) {
       var WrappedFunction = require("./wrapped-remote-function");
 
       var RemoteFunctionList = /*#__PURE__*/function () {
@@ -980,9 +1034,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = RemoteFunctionList;
     }, {
-      "./wrapped-remote-function": 12
+      "./wrapped-remote-function": 13
     }],
-    12: [function (require, module, exports) {
+    13: [function (require, module, exports) {
       var Util = require("../util/util.js");
 
       var GlobalEventHandler = require("../global-event-handler.js");
@@ -1037,8 +1091,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           value: function exec() {
             var _this5 = this;
 
-            for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-              args[_key3] = arguments[_key3];
+            for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+              args[_key4] = arguments[_key4];
             }
 
             var instanceID = Util.id(); // ensure this instance ID has not been added previously
@@ -1074,10 +1128,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       module.exports = WrappedRemoteFunction;
     }, {
-      "../global-event-handler.js": 8,
-      "../util/util.js": 13
+      "../global-event-handler.js": 9,
+      "../util/util.js": 14
     }],
-    13: [function (require, module, exports) {
+    14: [function (require, module, exports) {
       var Util = /*#__PURE__*/function () {
         function Util() {
           _classCallCheck(this, Util);

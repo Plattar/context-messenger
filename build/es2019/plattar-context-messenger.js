@@ -13,7 +13,7 @@ module.exports = {
     messenger: messengerInstance,
     memory: memoryInstance
 }
-},{"./memory/memory.js":2,"./messenger/messenger.js":9}],2:[function(require,module,exports){
+},{"./memory/memory.js":2,"./messenger/messenger.js":10}],2:[function(require,module,exports){
 const PermanentMemory = require("./permanent-memory");
 const TemporaryMemory = require("./temporary-memory");
 
@@ -213,6 +213,52 @@ class WrappedValue {
 
 module.exports = WrappedValue;
 },{}],6:[function(require,module,exports){
+/**
+ * Broadcaster is used to call functions in multiple contexts at the
+ * same time. This can be useful without having to handle complex logic
+ * in the application side.
+ * 
+ * See Plattar.messenger.broadcast
+ */
+class Broadcaster {
+    constructor(messengerInstance) {
+        this._messengerInstance = messengerInstance;
+        this._interfaces = [];
+
+        return new Proxy(this, {
+            get: (target, prop, receiver) => {
+                switch (prop) {
+                    case "_push":
+                    case "_interfaces": return target[prop];
+                    default:
+                        break;
+                }
+
+                // execute the desired function on all available stacks
+                return (...args) => {
+                    const interfaces = target._interfaces;
+                    const promises = [];
+
+                    interfaces.forEach((callable) => {
+                        promises.push(target._messengerInstance[callable][prop](...args));
+                    });
+
+                    return Promise.allSettled(promises);
+                };
+            }
+        });
+    }
+
+    /**
+     * Adds a new callable interface ID to the list of callables
+     */
+    _push(interfaceID) {
+        this._interfaces.push(interfaceID);
+    }
+}
+
+module.exports = Broadcaster;
+},{}],7:[function(require,module,exports){
 const WrappedFunction = require("./wrapped-local-function");
 
 class CurrentFunctionList {
@@ -263,7 +309,7 @@ class CurrentFunctionList {
 }
 
 module.exports = CurrentFunctionList;
-},{"./wrapped-local-function":7}],7:[function(require,module,exports){
+},{"./wrapped-local-function":8}],8:[function(require,module,exports){
 const Util = require("../util/util.js");
 
 /**
@@ -350,7 +396,7 @@ class WrappedLocalFunction {
 }
 
 module.exports = WrappedLocalFunction;
-},{"../util/util.js":13}],8:[function(require,module,exports){
+},{"../util/util.js":14}],9:[function(require,module,exports){
 const RemoteInterface = require("./remote-interface.js");
 
 /**
@@ -419,12 +465,13 @@ GlobalEventHandler.instance = () => {
 };
 
 module.exports = GlobalEventHandler;
-},{"./remote-interface.js":10}],9:[function(require,module,exports){
+},{"./remote-interface.js":11}],10:[function(require,module,exports){
 const CurrentFunctionList = require("./current/current-function-list");
 const RemoteInterface = require("./remote-interface");
 const RemoteFunctionList = require("./remote/remote-function-list");
 const Util = require("./util/util.js");
 const GlobalEventHandler = require("./global-event-handler.js");
+const Broadcaster = require("./broadcaster.js");
 
 /**
  * Messenger is a singleton that allows calling functions in multiple
@@ -440,6 +487,9 @@ class Messenger {
 
         // allow adding local functions immedietly
         this._currentFunctionList = new CurrentFunctionList();
+
+        // allows calling functions on everything
+        this._broadcaster = new Broadcaster(this);
 
         // we still need to confirm if a parent exists and has the messenger
         // framework added.. see _setup() function
@@ -470,11 +520,11 @@ class Messenger {
                 switch (prop) {
                     case "id": return target._id;
                     case "self": return target._currentFunctionList;
+                    case "broadcast": return target._broadcaster;
                     case "_setup":
                     case "_registerListeners":
                     case "_id":
-                    case "_callableList":
-                    case "callables":
+                    case "_broadcaster":
                     case "_parentStack": return target[prop];
                     default:
                         break;
@@ -491,14 +541,6 @@ class Messenger {
                 return target[prop];
             }
         });
-    }
-
-    /**
-     * Returns a list of all callables that have been added to this messenger instance.
-     * NOTE: Not all callables will have the same function definitions
-     */
-    get callables() {
-        return this._callableList;
     }
 
     /**
@@ -534,32 +576,28 @@ class Messenger {
                     break;
             }
 
-            const remoteList = new RemoteFunctionList(iframeID);
-
             // initialise the child iframe as a messenger pipe
             if (!this[iframeID]) {
-                this[iframeID] = remoteList;
+                this[iframeID] = new RemoteFunctionList(iframeID);
             }
 
             this[iframeID].setup(new RemoteInterface(src.source, src.origin));
 
-            // add the interface to a callable list
-            this._callableList.push(remoteList);
+            // add the interface to the broadcaster
+            this._broadcaster._push(iframeID);
 
             src.send("__messenger__parent_init");
         });
 
         GlobalEventHandler.instance().listen("__messenger__parent_init", (src, data) => {
-            const remoteList = new RemoteFunctionList("parent");
-
             if (!this["parent"]) {
-                this["parent"] = remoteList;
+                this["parent"] = new RemoteFunctionList("parent");
             }
 
             this["parent"].setup(new RemoteInterface(src.source, src.origin));
 
-            // add the interface to a callable list
-            this._callableList.push(remoteList);
+            // add the interface to the broadcaster
+            this._broadcaster._push("parent");
         });
 
         // this listener will fire remotely to execute a function in the current
@@ -590,7 +628,7 @@ class Messenger {
 }
 
 module.exports = Messenger;
-},{"./current/current-function-list":6,"./global-event-handler.js":8,"./remote-interface":10,"./remote/remote-function-list":11,"./util/util.js":13}],10:[function(require,module,exports){
+},{"./broadcaster.js":6,"./current/current-function-list":7,"./global-event-handler.js":9,"./remote-interface":11,"./remote/remote-function-list":12,"./util/util.js":14}],11:[function(require,module,exports){
 /**
  * Provides a single useful interface for performing remote function calls
  */
@@ -646,7 +684,7 @@ class RemoteInterface {
 }
 
 module.exports = RemoteInterface;
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 const WrappedFunction = require("./wrapped-remote-function");
 
 class RemoteFunctionList {
@@ -740,7 +778,7 @@ class RemoteFunctionList {
 }
 
 module.exports = RemoteFunctionList;
-},{"./wrapped-remote-function":12}],12:[function(require,module,exports){
+},{"./wrapped-remote-function":13}],13:[function(require,module,exports){
 const Util = require("../util/util.js");
 const GlobalEventHandler = require("../global-event-handler.js");
 
@@ -821,7 +859,7 @@ class WrappedRemoteFunction {
 }
 
 module.exports = WrappedRemoteFunction;
-},{"../global-event-handler.js":8,"../util/util.js":13}],13:[function(require,module,exports){
+},{"../global-event-handler.js":9,"../util/util.js":14}],14:[function(require,module,exports){
 class Util {
 
     /**
