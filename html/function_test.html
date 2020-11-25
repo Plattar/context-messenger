@@ -47,6 +47,12 @@
                     }).catch((err) => {
                         console.error(err);
                     });
+
+                    Plattar.messenger[frame].set_background_color(x, y, 0).then((res) => {
+                        // do something with return value (returns nothing)
+                    }).catch((err) => {
+                        console.error(err);
+                    });
                 }
             });
         }
