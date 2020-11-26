@@ -7,8 +7,18 @@ const TemporaryMemory = require("./temporary-memory");
  */
 class Memory {
     constructor(messengerInstance) {
-        this._tempMemory = new TemporaryMemory();
-        this._permMemory = new PermanentMemory();
+        this._messenger = messengerInstance;
+
+        this._tempMemory = new TemporaryMemory(messengerInstance);
+        this._permMemory = new PermanentMemory(messengerInstance);
+
+        this._messenger.self.__memory__set_temp_var = (name, data) => {
+            this._tempMemory[name] = data;
+        };
+
+        this._messenger.self.__memory__set_perm_var = (name, data) => {
+            this._permMemory[name] = data;
+        };
     }
 
     get temp() {

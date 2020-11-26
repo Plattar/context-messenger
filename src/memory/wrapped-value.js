@@ -3,14 +3,58 @@
  * for when the value has changed
  */
 class WrappedValue {
-    constructor(varName, isPermanent) {
+    constructor(varName, isPermanent, messengerInstance) {
         this._value = undefined;
         this._callback = undefined;
         this._isPermanent = isPermanent;
         this._varName = varName;
+        this._messenger = messengerInstance;
 
         if (this._isPermanent) {
             this._value = JSON.parse(localStorage.getItem(this._varName));
+        }
+    }
+
+    /**
+     * Refresh the memory value across all memory instances recursively
+     */
+    refresh() {
+        if (this._isPermanent) {
+            // broadcast variable to all children
+            this._messenger.broadcast.__memory__set_perm_var(this._varName, this._value);
+
+            // send variable to the parent
+            if (this._messenger.parent) {
+                this._messenger.parent.__memory__set_perm_var(this._varName, this._value);
+            }
+        }
+        else {
+            // broadcast variable to all children
+            this._messenger.broadcast.__memory__set_temp_var(this._varName, this._value);
+
+            // send variable to the parent
+            if (this._messenger.parent) {
+                this._messenger.parent.__memory__set_temp_var(this._varName, this._value);
+            }
+        }
+    }
+
+    /**
+     * Refresh this memory for a specific callable interface
+     */
+    refreshFor(callable) {
+        // invalid interface check
+        if (!this._messenger[callable]) {
+            return;
+        }
+
+        if (this._isPermanent) {
+            // set the variable for the specific callable
+            this._messenger[callable].__memory__set_perm_var(this._varName, this._value);
+        }
+        else {
+            // set the variable for the specific callable
+            this._messenger[callable].__memory__set_temp_var(this._varName, this._value);
         }
     }
 
@@ -38,6 +82,9 @@ class WrappedValue {
 
         // do not fire callback if the old and new values do not match
         if (this._callback && oldValue !== newValue) {
+            // recursively update this variable across all memory
+            this.refresh();
+
             // perform the callback that the value has just changed
             this._callback(oldValue, this._value);
         }

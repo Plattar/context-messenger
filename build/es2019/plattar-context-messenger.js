@@ -23,8 +23,18 @@ const TemporaryMemory = require("./temporary-memory");
  */
 class Memory {
     constructor(messengerInstance) {
-        this._tempMemory = new TemporaryMemory();
-        this._permMemory = new PermanentMemory();
+        this._messenger = messengerInstance;
+
+        this._tempMemory = new TemporaryMemory(messengerInstance);
+        this._permMemory = new PermanentMemory(messengerInstance);
+
+        this._messenger.self.__memory__set_temp_var = (name, data) => {
+            this._tempMemory[name] = data;
+        };
+
+        this._messenger.self.__memory__set_perm_var = (name, data) => {
+            this._permMemory[name] = data;
+        };
     }
 
     get temp() {
@@ -41,14 +51,14 @@ module.exports = Memory;
 const WrappedValue = require("./wrapped-value");
 
 class PermanentMemory {
-    constructor() {
-        return new Proxy({}, {
+    constructor(messengerInstance) {
+        return new Proxy(this, {
             get: (target, prop, receiver) => {
                 // sets the watcher callback
                 if (prop === "watch") {
                     return (variable, callback) => {
                         if (!target[variable]) {
-                            target[variable] = new WrappedValue(variable, true);
+                            target[variable] = new WrappedValue(variable, true, messengerInstance);
                         }
 
                         target[variable].watch = callback;
@@ -71,22 +81,30 @@ class PermanentMemory {
                     return () => {
                         localStorage.clear();
 
-                        for (const prop of Object.getOwnPropertyNames(target)) {
-                            delete target[prop];
+                        for (const pitem of Object.getOwnPropertyNames(target)) {
+                            delete target[pitem];
+                        }
+                    };
+                }
+
+                if (prop === "refresh") {
+                    return () => {
+                        for (const val of Object.getOwnPropertyNames(target)) {
+                            target[val].refresh();
                         }
                     };
                 }
 
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
-                    target[prop] = new WrappedValue(prop, true);
+                    target[prop] = new WrappedValue(prop, true, messengerInstance);
                 }
 
                 return target[prop].value;
             },
             set: (target, prop, value) => {
                 if (!target[prop]) {
-                    target[prop] = new WrappedValue(prop, true);
+                    target[prop] = new WrappedValue(prop, true, messengerInstance);
                 }
 
                 target[prop].value = value;
@@ -102,14 +120,14 @@ module.exports = PermanentMemory;
 const WrappedValue = require("./wrapped-value");
 
 class TemporaryMemory {
-    constructor() {
-        return new Proxy({}, {
+    constructor(messengerInstance) {
+        return new Proxy(this, {
             get: (target, prop, receiver) => {
                 // sets the watcher callback
                 if (prop === "watch") {
                     return (variable, callback) => {
                         if (!target[variable]) {
-                            target[variable] = new WrappedValue(variable, false);
+                            target[variable] = new WrappedValue(variable, false, messengerInstance);
                         }
 
                         target[variable].watch = callback;
@@ -120,22 +138,30 @@ class TemporaryMemory {
                 // purge is the same thing for all temporary variables
                 if (prop === "clear" || prop === "purge") {
                     return () => {
-                        for (const prop of Object.getOwnPropertyNames(target)) {
-                            delete target[prop];
+                        for (const val of Object.getOwnPropertyNames(target)) {
+                            delete target[val];
+                        }
+                    };
+                }
+
+                if (prop === "refresh") {
+                    return () => {
+                        for (const val of Object.getOwnPropertyNames(target)) {
+                            target[val].refresh();
                         }
                     };
                 }
 
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
-                    target[prop] = new WrappedValue(prop, false);
+                    target[prop] = new WrappedValue(prop, false, messengerInstance);
                 }
 
                 return target[prop].value;
             },
             set: (target, prop, value) => {
                 if (!target[prop]) {
-                    target[prop] = new WrappedValue(prop, false);
+                    target[prop] = new WrappedValue(prop, false, messengerInstance);
                 }
 
                 target[prop].value = value;
@@ -153,14 +179,58 @@ module.exports = TemporaryMemory;
  * for when the value has changed
  */
 class WrappedValue {
-    constructor(varName, isPermanent) {
+    constructor(varName, isPermanent, messengerInstance) {
         this._value = undefined;
         this._callback = undefined;
         this._isPermanent = isPermanent;
         this._varName = varName;
+        this._messenger = messengerInstance;
 
         if (this._isPermanent) {
             this._value = JSON.parse(localStorage.getItem(this._varName));
+        }
+    }
+
+    /**
+     * Refresh the memory value across all memory instances recursively
+     */
+    refresh() {
+        if (this._isPermanent) {
+            // broadcast variable to all children
+            this._messenger.broadcast.__memory__set_perm_var(this._varName, this._value);
+
+            // send variable to the parent
+            if (this._messenger.parent) {
+                this._messenger.parent.__memory__set_perm_var(this._varName, this._value);
+            }
+        }
+        else {
+            // broadcast variable to all children
+            this._messenger.broadcast.__memory__set_temp_var(this._varName, this._value);
+
+            // send variable to the parent
+            if (this._messenger.parent) {
+                this._messenger.parent.__memory__set_temp_var(this._varName, this._value);
+            }
+        }
+    }
+
+    /**
+     * Refresh this memory for a specific callable interface
+     */
+    refreshFor(callable) {
+        // invalid interface check
+        if (!this._messenger[callable]) {
+            return;
+        }
+
+        if (this._isPermanent) {
+            // set the variable for the specific callable
+            this._messenger[callable].__memory__set_perm_var(this._varName, this._value);
+        }
+        else {
+            // set the variable for the specific callable
+            this._messenger[callable].__memory__set_temp_var(this._varName, this._value);
         }
     }
 
@@ -188,6 +258,9 @@ class WrappedValue {
 
         // do not fire callback if the old and new values do not match
         if (this._callback && oldValue !== newValue) {
+            // recursively update this variable across all memory
+            this.refresh();
+
             // perform the callback that the value has just changed
             this._callback(oldValue, this._value);
         }
@@ -595,9 +668,6 @@ class Messenger {
             }
 
             this["parent"].setup(new RemoteInterface(src.source, src.origin));
-
-            // add the interface to the broadcaster
-            this._broadcaster._push("parent");
         });
 
         // this listener will fire remotely to execute a function in the current

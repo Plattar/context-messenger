@@ -108,10 +108,21 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       var Memory = /*#__PURE__*/function () {
         function Memory(messengerInstance) {
+          var _this = this;
+
           _classCallCheck(this, Memory);
 
-          this._tempMemory = new TemporaryMemory();
-          this._permMemory = new PermanentMemory();
+          this._messenger = messengerInstance;
+          this._tempMemory = new TemporaryMemory(messengerInstance);
+          this._permMemory = new PermanentMemory(messengerInstance);
+
+          this._messenger.self.__memory__set_temp_var = function (name, data) {
+            _this._tempMemory[name] = data;
+          };
+
+          this._messenger.self.__memory__set_perm_var = function (name, data) {
+            _this._permMemory[name] = data;
+          };
         }
 
         _createClass(Memory, [{
@@ -137,16 +148,16 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     3: [function (require, module, exports) {
       var WrappedValue = require("./wrapped-value");
 
-      var PermanentMemory = function PermanentMemory() {
+      var PermanentMemory = function PermanentMemory(messengerInstance) {
         _classCallCheck(this, PermanentMemory);
 
-        return new Proxy({}, {
+        return new Proxy(this, {
           get: function get(target, prop, receiver) {
             // sets the watcher callback
             if (prop === "watch") {
               return function (variable, callback) {
                 if (!target[variable]) {
-                  target[variable] = new WrappedValue(variable, true);
+                  target[variable] = new WrappedValue(variable, true, messengerInstance);
                 }
 
                 target[variable].watch = callback;
@@ -183,8 +194,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
                 try {
                   for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-                    var _prop = _step2.value;
-                    delete target[_prop];
+                    var pitem = _step2.value;
+                    delete target[pitem];
                   }
                 } catch (err) {
                   _iterator2.e(err);
@@ -192,18 +203,36 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
                   _iterator2.f();
                 }
               };
+            }
+
+            if (prop === "refresh") {
+              return function () {
+                var _iterator3 = _createForOfIteratorHelper(Object.getOwnPropertyNames(target)),
+                    _step3;
+
+                try {
+                  for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+                    var val = _step3.value;
+                    target[val].refresh();
+                  }
+                } catch (err) {
+                  _iterator3.e(err);
+                } finally {
+                  _iterator3.f();
+                }
+              };
             } // on first access, we create a WrappedValue type
 
 
             if (!target[prop]) {
-              target[prop] = new WrappedValue(prop, true);
+              target[prop] = new WrappedValue(prop, true, messengerInstance);
             }
 
             return target[prop].value;
           },
           set: function set(target, prop, value) {
             if (!target[prop]) {
-              target[prop] = new WrappedValue(prop, true);
+              target[prop] = new WrappedValue(prop, true, messengerInstance);
             }
 
             target[prop].value = value;
@@ -219,16 +248,16 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     4: [function (require, module, exports) {
       var WrappedValue = require("./wrapped-value");
 
-      var TemporaryMemory = function TemporaryMemory() {
+      var TemporaryMemory = function TemporaryMemory(messengerInstance) {
         _classCallCheck(this, TemporaryMemory);
 
-        return new Proxy({}, {
+        return new Proxy(this, {
           get: function get(target, prop, receiver) {
             // sets the watcher callback
             if (prop === "watch") {
               return function (variable, callback) {
                 if (!target[variable]) {
-                  target[variable] = new WrappedValue(variable, false);
+                  target[variable] = new WrappedValue(variable, false, messengerInstance);
                 }
 
                 target[variable].watch = callback;
@@ -239,32 +268,50 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
             if (prop === "clear" || prop === "purge") {
               return function () {
-                var _iterator3 = _createForOfIteratorHelper(Object.getOwnPropertyNames(target)),
-                    _step3;
+                var _iterator4 = _createForOfIteratorHelper(Object.getOwnPropertyNames(target)),
+                    _step4;
 
                 try {
-                  for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-                    var _prop2 = _step3.value;
-                    delete target[_prop2];
+                  for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+                    var val = _step4.value;
+                    delete target[val];
                   }
                 } catch (err) {
-                  _iterator3.e(err);
+                  _iterator4.e(err);
                 } finally {
-                  _iterator3.f();
+                  _iterator4.f();
+                }
+              };
+            }
+
+            if (prop === "refresh") {
+              return function () {
+                var _iterator5 = _createForOfIteratorHelper(Object.getOwnPropertyNames(target)),
+                    _step5;
+
+                try {
+                  for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+                    var val = _step5.value;
+                    target[val].refresh();
+                  }
+                } catch (err) {
+                  _iterator5.e(err);
+                } finally {
+                  _iterator5.f();
                 }
               };
             } // on first access, we create a WrappedValue type
 
 
             if (!target[prop]) {
-              target[prop] = new WrappedValue(prop, false);
+              target[prop] = new WrappedValue(prop, false, messengerInstance);
             }
 
             return target[prop].value;
           },
           set: function set(target, prop, value) {
             if (!target[prop]) {
-              target[prop] = new WrappedValue(prop, false);
+              target[prop] = new WrappedValue(prop, false, messengerInstance);
             }
 
             target[prop].value = value;
@@ -283,20 +330,66 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
        * for when the value has changed
        */
       var WrappedValue = /*#__PURE__*/function () {
-        function WrappedValue(varName, isPermanent) {
+        function WrappedValue(varName, isPermanent, messengerInstance) {
           _classCallCheck(this, WrappedValue);
 
           this._value = undefined;
           this._callback = undefined;
           this._isPermanent = isPermanent;
           this._varName = varName;
+          this._messenger = messengerInstance;
 
           if (this._isPermanent) {
             this._value = JSON.parse(localStorage.getItem(this._varName));
           }
         }
+        /**
+         * Refresh the memory value across all memory instances recursively
+         */
+
 
         _createClass(WrappedValue, [{
+          key: "refresh",
+          value: function refresh() {
+            if (this._isPermanent) {
+              // broadcast variable to all children
+              this._messenger.broadcast.__memory__set_perm_var(this._varName, this._value); // send variable to the parent
+
+
+              if (this._messenger.parent) {
+                this._messenger.parent.__memory__set_perm_var(this._varName, this._value);
+              }
+            } else {
+              // broadcast variable to all children
+              this._messenger.broadcast.__memory__set_temp_var(this._varName, this._value); // send variable to the parent
+
+
+              if (this._messenger.parent) {
+                this._messenger.parent.__memory__set_temp_var(this._varName, this._value);
+              }
+            }
+          }
+          /**
+           * Refresh this memory for a specific callable interface
+           */
+
+        }, {
+          key: "refreshFor",
+          value: function refreshFor(callable) {
+            // invalid interface check
+            if (!this._messenger[callable]) {
+              return;
+            }
+
+            if (this._isPermanent) {
+              // set the variable for the specific callable
+              this._messenger[callable].__memory__set_perm_var(this._varName, this._value);
+            } else {
+              // set the variable for the specific callable
+              this._messenger[callable].__memory__set_temp_var(this._varName, this._value);
+            }
+          }
+        }, {
           key: "value",
           get: function get() {
             if (this._isPermanent && this._value == undefined) {
@@ -319,7 +412,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 
             if (this._callback && oldValue !== newValue) {
-              // perform the callback that the value has just changed
+              // recursively update this variable across all memory
+              this.refresh(); // perform the callback that the value has just changed
+
               this._callback(oldValue, this._value);
             }
           }
@@ -429,18 +524,18 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
             if (prop === "clear" || prop === "purge") {
               return function () {
-                var _iterator4 = _createForOfIteratorHelper(Object.getOwnPropertyNames(target)),
-                    _step4;
+                var _iterator6 = _createForOfIteratorHelper(Object.getOwnPropertyNames(target)),
+                    _step6;
 
                 try {
-                  for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
-                    var pitem = _step4.value;
+                  for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+                    var pitem = _step6.value;
                     delete target[pitem];
                   }
                 } catch (err) {
-                  _iterator4.e(err);
+                  _iterator6.e(err);
                 } finally {
-                  _iterator4.f();
+                  _iterator6.f();
                 }
               };
             } // on first access, we create a WrappedValue type
@@ -517,20 +612,20 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         }, {
           key: "exec",
           value: function exec() {
-            var _this = this;
+            var _this2 = this;
 
             for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
               args[_key3] = arguments[_key3];
             }
 
             return new Promise(function (accept, reject) {
-              if (!_this._value) {
-                return reject(new Error("WrappedLocalFunction.exec() function with name " + _this._funcName + "() is not defined"));
+              if (!_this2._value) {
+                return reject(new Error("WrappedLocalFunction.exec() function with name " + _this2._funcName + "() is not defined"));
               }
 
               try {
                 // otherwise execute the function
-                var rObject = _this._execute.apply(_this, args); // we need to check if the returned object is a Promise, if so, handle it
+                var rObject = _this2._execute.apply(_this2, args); // we need to check if the returned object is a Promise, if so, handle it
                 // differently. This can happen if the function wants to execute asyn
 
 
@@ -594,7 +689,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       var GlobalEventHandler = /*#__PURE__*/function () {
         function GlobalEventHandler() {
-          var _this2 = this;
+          var _this3 = this;
 
           _classCallCheck(this, GlobalEventHandler);
 
@@ -616,10 +711,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
             if (jsonData && jsonData.event && jsonData.data) {
               // see if there are any listeners for this
-              if (_this2._eventListeners[jsonData.event]) {
+              if (_this3._eventListeners[jsonData.event]) {
                 var remoteInterface = new RemoteInterface(evt.source, evt.origin); // loop through and call all the event handlers
 
-                _this2._eventListeners[jsonData.event].forEach(function (callback) {
+                _this3._eventListeners[jsonData.event].forEach(function (callback) {
                   try {
                     callback(remoteInterface, jsonData.data);
                   } catch (e) {
@@ -773,52 +868,49 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         }, {
           key: "_registerListeners",
           value: function _registerListeners() {
-            var _this3 = this;
+            var _this4 = this;
 
             GlobalEventHandler.instance().listen("__messenger__child_init", function (src, data) {
               var iframeID = src.id; // check reserved key list
 
               switch (iframeID) {
                 case undefined:
-                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID cannot be undefined");
+                  throw new Error("Messenger[" + _this4._id + "].setup() Component ID cannot be undefined");
 
                 case "self":
-                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
+                  throw new Error("Messenger[" + _this4._id + "].setup() Component ID of \"self\" cannot be used as the keyword is reserved");
 
                 case "parent":
-                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"parent\" cannot be used as the keyword is reserved");
+                  throw new Error("Messenger[" + _this4._id + "].setup() Component ID of \"parent\" cannot be used as the keyword is reserved");
 
                 case "id":
-                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"id\" cannot be used as the keyword is reserved");
+                  throw new Error("Messenger[" + _this4._id + "].setup() Component ID of \"id\" cannot be used as the keyword is reserved");
 
                 case "onload":
-                  throw new Error("Messenger[" + _this3._id + "].setup() Component ID of \"onload\" cannot be used as the keyword is reserved");
+                  throw new Error("Messenger[" + _this4._id + "].setup() Component ID of \"onload\" cannot be used as the keyword is reserved");
 
                 default:
                   break;
               } // initialise the child iframe as a messenger pipe
 
 
-              if (!_this3[iframeID]) {
-                _this3[iframeID] = new RemoteFunctionList(iframeID);
+              if (!_this4[iframeID]) {
+                _this4[iframeID] = new RemoteFunctionList(iframeID);
               }
 
-              _this3[iframeID].setup(new RemoteInterface(src.source, src.origin)); // add the interface to the broadcaster
+              _this4[iframeID].setup(new RemoteInterface(src.source, src.origin)); // add the interface to the broadcaster
 
 
-              _this3._broadcaster._push(iframeID);
+              _this4._broadcaster._push(iframeID);
 
               src.send("__messenger__parent_init");
             });
             GlobalEventHandler.instance().listen("__messenger__parent_init", function (src, data) {
-              if (!_this3["parent"]) {
-                _this3["parent"] = new RemoteFunctionList("parent");
+              if (!_this4["parent"]) {
+                _this4["parent"] = new RemoteFunctionList("parent");
               }
 
-              _this3["parent"].setup(new RemoteInterface(src.source, src.origin)); // add the interface to the broadcaster
-
-
-              _this3._broadcaster._push("parent");
+              _this4["parent"].setup(new RemoteInterface(src.source, src.origin));
             }); // this listener will fire remotely to execute a function in the current
             // context
 
@@ -1049,7 +1141,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       var WrappedRemoteFunction = /*#__PURE__*/function () {
         function WrappedRemoteFunction(funcName, remoteInterface) {
-          var _this4 = this;
+          var _this5 = this;
 
           _classCallCheck(this, WrappedRemoteFunction);
 
@@ -1060,19 +1152,19 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           GlobalEventHandler.instance().listen("__messenger__exec_fnc_result", function (src, data) {
             var instanceID = data.instance_id; // the function name must match
 
-            if (data.function_name !== _this4._funcName) {
+            if (data.function_name !== _this5._funcName) {
               return;
             } // the instance ID must be found, otherwise this is a rogue execution
             // that can be ignored (should not happen)
 
 
-            if (!_this4._callInstances[instanceID]) {
+            if (!_this5._callInstances[instanceID]) {
               return;
             }
 
-            var promise = _this4._callInstances[instanceID]; // remove the old instance
+            var promise = _this5._callInstances[instanceID]; // remove the old instance
 
-            delete _this4._callInstances[instanceID]; // perform the promise callbacks
+            delete _this5._callInstances[instanceID]; // perform the promise callbacks
 
             if (data.function_status === "success") {
               promise.accept(data.function_args);
@@ -1089,7 +1181,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         _createClass(WrappedRemoteFunction, [{
           key: "exec",
           value: function exec() {
-            var _this5 = this;
+            var _this6 = this;
 
             for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
               args[_key4] = arguments[_key4];
@@ -1109,14 +1201,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
             return new Promise(function (accept, reject) {
               // save this promise to be executed later
-              _this5._callInstances[instanceID] = {
+              _this6._callInstances[instanceID] = {
                 accept: accept,
                 reject: reject
               }; // execute this event in another context
 
-              _this5._remoteInterface.send("__messenger__exec_fnc", {
+              _this6._remoteInterface.send("__messenger__exec_fnc", {
                 instance_id: instanceID,
-                function_name: _this5._funcName,
+                function_name: _this6._funcName,
                 function_args: args
               });
             });
