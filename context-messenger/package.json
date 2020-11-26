@@ -1,8 +1,9 @@
 {
-  "name": "context-messenger",
-  "version": "1.0.0",
-  "description": "Plattar Context Messenger framework for cross-iframe communication",
-  "main": "src/index.js",
+  "name": "@plattar/context-messenger",
+  "version": "1.95.3",
+  "description": "Context Messenger framework for cross-iframe communication (https://www.plattar.com)",
+  "main": "index.js",
+  "module": "index.js",
   "scripts": {
     "clean": "rm -rf build node_modules",
     "build": "npm run clean && npm install && npm run build-fast",
@@ -14,12 +15,26 @@
     "type": "git",
     "url": "git+https://github.com/Plattar/context-messenger.git"
   },
-  "author": "David Arayan (Plattar)",
-  "license": "ISC",
+  "keywords": [
+    "plattar",
+    "npm",
+    "ar",
+    "augmented",
+    "reality",
+    "augmentedreality",
+    "augmented-reality",
+    "context",
+    "messenger",
+    "context-messenger",
+    "function",
+    "functioncall"
+  ],
+  "author": "plattar",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/Plattar/context-messenger/issues"
   },
-  "homepage": "https://github.com/Plattar/context-messenger#readme",
+  "homepage": "https://www.plattar.com",
   "devDependencies": {
     "@babel/cli": "^7.12.1",
     "@babel/core": "^7.12.3",
