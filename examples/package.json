@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@plattar/context-messenger": "^1.95.4"
+    "@plattar/context-messenger": "^1.95.6"
   }
 }
