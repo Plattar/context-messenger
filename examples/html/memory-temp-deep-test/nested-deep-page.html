@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Function Test</title>
+    <script type='text/javascript' src='../../build/es2019/plattar-context-messenger.js'></script>
+</head>
+
+<body>
+    <p>This is a deep page</p>
+
+    <textarea id="memory_area" rows="10" cols="50"></textarea>
+
+    <p>Click the button to save.</p>
+
+    <button type="button" onclick="save()">Save</button>
+
+    <script>
+        function save() {
+            var text = document.getElementById("memory_area").value;
+
+            Plattar.memory.temp.text_value = text;
+        }
+
+        Plattar.memory.temp.watch("text_value", (oldVal, newVal) => {
+            document.getElementById("memory_area").value = newVal;
+        });
+    </script>
+</body>
+
+</html>

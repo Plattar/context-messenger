@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Function Test</title>
+    <script type='text/javascript' src='../../build/es2019/plattar-context-messenger.js'></script>
+</head>
+
+<body>
+    <p>This is a child page that can watch changes in memory</p>
+
+    <textarea readonly id="memory_area" rows="10" cols="50"></textarea>
+
+    <iframe id="plattar_frame_1" src="./nested-deep-page.html" title="nested iframe 1" width="450"
+        height="250"></iframe>
+
+    <script>
+        Plattar.memory.perm.watch("text_value", (oldVal, newVal) => {
+            document.getElementById("memory_area").value = newVal;
+        });
+
+        document.getElementById("memory_area").value = Plattar.memory.perm.text_value;
+    </script>
+</body>
+
+</html>
