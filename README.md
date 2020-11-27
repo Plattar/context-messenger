@@ -11,13 +11,17 @@
 
 _context-messenger_ allows defining and calling functions and variables across multiple iframes.
 
- ### _Installation_
+### _Installation_
 
 -   Install using [npm](https://www.npmjs.com/package/@plattar/context-messenger)
 
 ```console
 npm install @plattar/context-messenger
 ```
+
+### _Examples_
+
+-   Instructions on how to run example code in [Examples Folder](https://github.com/Plattar/context-messenger/tree/master/examples)
 
 ### _How to execute functions from an iframe on the parent page_
 
@@ -145,3 +149,61 @@ Plattar.messenger.broadcast.getBackgroundColor().then((results) => {
 ```
 
 For more details on how this is handled see [Promise.allSettled](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled)
+
+### _How to store and read variables from iframes_
+
+Storing of variables is done using _context-messenger_ `memory` module. All variables are available to be accessed in all contexts. Note that the memory module does not allow storing functions. Use messenger module for that.
+
+-   To store a temporary variable use the following. Temporary variables are not persistent
+ and will be cleared when the javascript context ends.
+
+```javascript
+Plattar.memory.temp.my_variable = "hello world!";
+```
+
+-   Access the variable as follows from any context that has _context-messenger_
+
+```javascript
+console.log(Plattar.memory.temp.my_variable); // prints hello world!
+```
+
+-   To store a persistent variable use the following. Persistent memory uses [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) behind the scenes.
+
+```javascript
+Plattar.memory.perm.my_variable = "hello world!";
+```
+
+-   Access the variable as follows from any context that has _context-messenger_
+
+```javascript
+console.log(Plattar.memory.perm.my_variable); // prints hello world!
+```
+
+### _How to watch for variable changes_
+
+_context-messenger_ `memory` module provides a `watch` function that allows detecting when the variable has changed.
+
+-   Watch a `temp` or `perm` variable example
+
+```javascript
+
+// watch temp variable changes for my_temp_variable
+Plattar.memory.temp.watch("my_temp_variable", (oldVar, newVar) => {
+  console.log("old variable was " + oldVar);
+  console.log("new variable was " + newVar);
+});
+
+// watch perm variable changes for my_perm_variable
+Plattar.memory.perm.watch("my_perm_variable", (oldVar, newVar) => {
+  console.log("old variable was " + oldVar);
+  console.log("new variable was " + newVar);
+});
+
+// set initial variables
+Plattar.memory.temp.my_temp_variable = "hello world!";
+Plattar.memory.perm.my_perm_variable = "hello world!";
+
+// initiate a variable change
+Plattar.memory.temp.my_temp_variable = "hello world again!";
+Plattar.memory.perm.my_perm_variable = "hello world again!";
+```
