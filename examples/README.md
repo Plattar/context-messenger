@@ -20,5 +20,5 @@ npm install
 docker-compose -f local-server.yml up
 ```
 
--   Open Browser (Chrome, Edge, Safari, Firefox) and go to `http://localhost:8100/local/function_test/index.html`
+-   Open Browser (Chrome, Edge, Safari, Firefox) and go to `http://localhost:8100/local/index.html`
 -   Visit the other folders to view other examples
