@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Messenger Test</title>
+    <script type='text/javascript' src='../../build/es2019/plattar-context-messenger.js'></script>
+    <style>
+        div {
+            width: 200px;
+            height: 100px;
+            border: 1px solid black;
+        }
+
+        iframe {
+            width: 400px;
+            height: 250px;
+            border: 1px solid red;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 5px;
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="../index.html">Back</a>
+
+    <table style="width:100%">
+        <tr>
+            <td>
+                <p>Type something and click Execute</p>
+                <textarea id="memory_area" rows="10" cols="50"></textarea>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <button type="button" onclick="save()">Execute</button>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p>Execution Result</p>
+
+                <p id="demo"></p>
+            </td>
+        </tr>
+    </table>
+
+    <p></p>
+
+    <table style="width:100%">
+        <tr>
+            <td>
+                <iframe id="plattar_frame_1" src="./nested-page.html" title="nested iframe 1"></iframe>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        var isLoaded = false;
+
+        function save() {
+            if (isLoaded) {
+                var text = document.getElementById("memory_area").value;
+                Plattar.messenger.plattar_frame_1.deferred_exec(text).then((ans) => {
+                    document.getElementById("demo").innerHTML = ans;
+                }).catch((err) => {
+                    console.error(err);
+                });
+            }
+        }
+
+        Plattar.messenger.onload("plattar_frame_1", () => {
+            isLoaded = true;
+        });
+    </script>
+</body>
+
+</html>

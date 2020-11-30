@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Function Test</title>
+    <script type='text/javascript' src='../../build/es2019/plattar-context-messenger.js'></script>
+</head>
+
+<body>
+    <p>Message passed from parent</p>
+
+    <p id="demo"></p>
+
+    <script type='text/javascript'>
+
+        Plattar.messenger.self.deferred_exec = (text) => {
+            document.getElementById("demo").innerHTML = "will return 'Hello " + text + "! how are you?' in 3 seconds";
+            return new Promise((accept, reject) => {
+                setTimeout(() => {
+                    document.getElementById("demo").innerHTML = "data returned!";
+                    accept("Hello " + text + "! how are you?");
+                }, 3000);
+            });
+        };
+    </script>
+</body>
+
+</html>
