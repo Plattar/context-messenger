@@ -10,6 +10,19 @@
             height: 100px;
             border: 1px solid black;
         }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 5px;
+            text-align: left;
+        }
     </style>
 </head>
 
@@ -22,8 +35,18 @@
 
     <button type="button" onclick="save()">Save</button>
 
-    <iframe id="plattar_frame_1" src="./nested-page.html" title="nested iframe 1" width="550" height="450"></iframe>
-    <iframe id="plattar_frame_2" src="./nested-page.html" title="nested iframe 2" width="550" height="450"></iframe>
+    <table style="width:100%">
+        <tr>
+            <td>
+                <iframe id="plattar_frame_1" src="./nested-page.html" title="nested iframe 1" width="450"
+                    height="250"></iframe>
+            </td>
+            <td>
+                <iframe id="plattar_frame_2" src="./nested-page.html" title="nested iframe 2" width="450"
+                    height="250"></iframe>
+            </td>
+        </tr>
+    </table>
 
     <script>
         function save() {

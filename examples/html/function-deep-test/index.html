@@ -10,6 +10,19 @@
             height: 100px;
             border: 1px solid black;
         }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 5px;
+            text-align: left;
+        }
     </style>
 </head>
 
@@ -21,18 +34,32 @@
     <p id="demo"></p>
     <p id="timestamp"></p>
 
-    <p id="plattar_frame_1_ts"></p>
-    <p id="plattar_frame_1_col"></p>
-    <iframe id="plattar_frame_1" src="./nested-page.html" title="nested iframe 1"></iframe>
-    <p id="plattar_frame_2_ts"></p>
-    <p id="plattar_frame_2_col"></p>
-    <iframe id="plattar_frame_2" src="./nested-page.html" title="nested iframe 2"></iframe>
-    <p id="plattar_frame_3_ts"></p>
-    <p id="plattar_frame_3_col"></p>
-    <iframe id="plattar_frame_3" src="./nested-page.html" title="nested iframe 3"></iframe>
-    <p id="plattar_frame_4_ts"></p>
-    <p id="plattar_frame_4_col"></p>
-    <iframe id="plattar_frame_4" src="./nested-page.html" title="nested iframe 4"></iframe>
+    <table style="width:100%">
+        <tr>
+            <td>
+                <p id="plattar_frame_1_ts"></p>
+                <p id="plattar_frame_1_col"></p>
+                <iframe id="plattar_frame_1" src="./nested-page.html" title="nested iframe 1"></iframe>
+            </td>
+            <td>
+                <p id="plattar_frame_2_ts"></p>
+                <p id="plattar_frame_2_col"></p>
+                <iframe id="plattar_frame_2" src="./nested-page.html" title="nested iframe 2"></iframe>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p id="plattar_frame_3_ts"></p>
+                <p id="plattar_frame_3_col"></p>
+                <iframe id="plattar_frame_3" src="./nested-page.html" title="nested iframe 3"></iframe>
+            </td>
+            <td>
+                <p id="plattar_frame_4_ts"></p>
+                <p id="plattar_frame_4_col"></p>
+                <iframe id="plattar_frame_4" src="./nested-page.html" title="nested iframe 4"></iframe>
+            </td>
+        </tr>
+    </table>
 
     <script>
         // this is called by the child frame
