@@ -79,7 +79,7 @@ class Messenger {
      * Internal function call to initialise the messenger framework
      */
     _setup() {
-        this._registerListeners(this);
+        this._registerListeners();
 
         // if a parent exists, send a message calling for an initialisation
         if (this._parentStack) {
@@ -93,7 +93,7 @@ class Messenger {
     /**
      * Register all critical listener interfaces so the framework can function correctly
      */
-    _registerListeners(messengerInstance) {
+    _registerListeners() {
         GlobalEventHandler.instance().listen("__messenger__child_init", (src, data) => {
             const iframeID = src.id;
 
@@ -137,7 +137,7 @@ class Messenger {
             const fname = data.function_name;
 
             // using JS reflection, execute the local function
-            messengerInstance.self[fname](...args).then((res) => {
+            GlobalEventHandler.instance().messengerInstance.self[fname](...args).then((res) => {
                 src.send("__messenger__exec_fnc_result", {
                     function_status: "success",
                     function_name: fname,

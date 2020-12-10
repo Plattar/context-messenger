@@ -44,6 +44,22 @@ class GlobalEventHandler {
         });
     }
 
+    set messengerInstance(value) {
+        this._messenger = value;
+    }
+
+    set memoryInstance(value) {
+        this._memory = value;
+    }
+
+    get messengerInstance() {
+        return this._messenger;
+    }
+
+    get memoryInstance() {
+        return this._memory;
+    }
+
     listen(event, callback) {
         if (typeof callback !== "function") {
             throw new TypeError("GlobalEventHandler.listen(event, callback) callback must be a type of function.");
