@@ -1,9 +1,10 @@
 {
   "name": "@plattar/context-messenger",
-  "version": "1.96.3",
+  "version": "1.96.4",
   "description": "Context Messenger framework for cross-iframe communication (https://www.plattar.com)",
   "main": "index.js",
   "module": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "clean": "rm -rf build node_modules",
     "build": "npm run clean && npm install && npm run build-fast",
