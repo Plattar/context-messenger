@@ -1,6 +1,6 @@
 {
   "name": "@plattar/context-messenger",
-  "version": "1.96.4",
+  "version": "1.104.1",
   "description": "Context Messenger framework for cross-iframe communication (https://www.plattar.com)",
   "main": "index.js",
   "module": "index.js",
@@ -9,8 +9,8 @@
     "clean": "rm -rf build node_modules",
     "build": "npm run clean && npm install && npm run build-fast",
     "build-fast": "npm run build-es2019 && npm run build-es2015",
-    "build-es2019": "rm -rf build/es2019 && mkdir -p build/es2019 && browserify --standalone Plattar index.js -o build/es2019/plattar-context-messenger.js && uglifyjs build/es2019/plattar-context-messenger.js --output build/es2019/plattar-context-messenger-min.js",
-    "build-es2015": "rm -rf build/es2015 && mkdir -p build/es2015 && babel build/es2019/plattar-context-messenger.js --presets=@babel/env > build/es2015/plattar-context-messenger.js && uglifyjs build/es2015/plattar-context-messenger.js --output build/es2015/plattar-context-messenger-min.js"
+    "build-es2019": "rm -rf build/es2019 && mkdir -p build/es2019 && browserify --standalone Plattar index.js -o build/es2019/plattar-context-messenger.js && uglifyjs build/es2019/plattar-context-messenger.js --output build/es2019/plattar-context-messenger.min.js",
+    "build-es2015": "rm -rf build/es2015 && mkdir -p build/es2015 && babel build/es2019/plattar-context-messenger.js --presets=@babel/env > build/es2015/plattar-context-messenger.js && uglifyjs build/es2015/plattar-context-messenger.js --output build/es2015/plattar-context-messenger.min.js"
   },
   "repository": {
     "type": "git",
@@ -37,9 +37,9 @@
   },
   "homepage": "https://www.plattar.com",
   "devDependencies": {
-    "@babel/cli": "^7.12.1",
-    "@babel/core": "^7.12.3",
-    "@babel/preset-env": "^7.12.1",
+    "@babel/cli": "^7.13.14",
+    "@babel/core": "^7.13.14",
+    "@babel/preset-env": "^7.13.12",
     "browserify": "^17.0.0",
     "uglify-es": "^3.3.9"
   }

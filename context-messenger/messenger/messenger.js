@@ -85,8 +85,9 @@ class Messenger {
         if (this._parentStack) {
             this._parentStack.send("__messenger__child_init");
         }
-        else {
-            console.warn("Messenger[" + this._id + "] does not have a parent. Plattar.messenger.parent will be undefined. This warning can be ignored for the parent page.");
+
+        if (window.location.protocol !== "https:") {
+            console.warn("Messenger[" + this._id + "] requires https but protocol is \"" + window.location.protocol + "\", messenger will not work correctly.");
         }
     }
 

@@ -13,24 +13,16 @@ _context-messenger_ allows defining and calling functions and variables across m
 
 ### _Quick Use_
 
-* ES2019 Builds via [jsDelivr](https://www.jsdelivr.com/)
+* ES2015 & ES2019 Builds via [jsDelivr](https://www.jsdelivr.com/)
 
 ```javascript
-// Minified Version (Latest)
-https://cdn.jsdelivr.net/npm/@plattar/context-messenger/build/es2019/plattar-context-messenger-min.js
+// Minified Version ES2015 & ES2019 (Latest)
+https://cdn.jsdelivr.net/npm/@plattar/context-messenger/build/es2015/plattar-context-messenger.min.js
+https://cdn.jsdelivr.net/npm/@plattar/context-messenger/build/es2019/plattar-context-messenger.min.js
 
-// Non Minified Version (Latest)
-https://cdn.jsdelivr.net/npm/@plattar/context-messenger/build/es2019/plattar-context-messenger.js
-```
-
-* ES2015 Builds via [jsDelivr](https://www.jsdelivr.com/)
-
-```javascript
-// Minified Version (Latest)
-https://cdn.jsdelivr.net/npm/@plattar/context-messenger/build/es2015/plattar-context-messenger-min.js
-
-// Non Minified Version (Latest)
+// Standard Version ES2015 & ES2019 (Latest)
 https://cdn.jsdelivr.net/npm/@plattar/context-messenger/build/es2015/plattar-context-messenger.js
+https://cdn.jsdelivr.net/npm/@plattar/context-messenger/build/es2019/plattar-context-messenger.js
 ```
 
 ### _Installation_
