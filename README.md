@@ -13,7 +13,7 @@ _context-messenger_ allows defining and calling functions and variables across m
 
 ### _Quick Use_
 
-* ES2015 & ES2019 Builds via [jsDelivr](https://www.jsdelivr.com/)
+-   ES2015 & ES2019 Builds via [jsDelivr](https://www.jsdelivr.com/)
 
 ```javascript
 // Minified Version ES2015 & ES2019 (Latest)
@@ -168,8 +168,7 @@ For more details on how this is handled see [Promise.allSettled](https://develop
 
 Storing of variables is done using _context-messenger_ `memory` module. All variables are available to be accessed in all contexts. Note that the memory module does not allow storing functions. Use messenger module for that.
 
--   To store a temporary variable use the following. Temporary variables are not persistent
- and will be cleared when the javascript context ends.
+-   To store a temporary variable use the following. Temporary variables are not persistent and will be cleared when the javascript context ends.
 
 ```javascript
 Plattar.memory.temp.my_variable = "hello world!";
