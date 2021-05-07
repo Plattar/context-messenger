@@ -13,6 +13,13 @@ class Util {
     static isPromise(obj) {
         return !!obj && (typeof obj === "object" || typeof obj === "function") && typeof obj.then === "function";
     }
+
+    /**
+     * checks if the provided object is a type of Error object
+     */
+    static isError(e) {
+        return e && e.stack && e.message && typeof e.stack === "string" && typeof e.message === "string";
+    }
 }
 
 module.exports = Util;

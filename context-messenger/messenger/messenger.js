@@ -146,10 +146,12 @@ class Messenger {
                     instance_id: instanceID
                 });
             }).catch((err) => {
+                const error_arg = Util.isError(err) ? err.message : err;
+
                 src.send("__messenger__exec_fnc_result", {
                     function_status: "error",
                     function_name: fname,
-                    function_args: err.message,
+                    function_args: (error_arg ? error_arg : "unknown error"),
                     instance_id: instanceID
                 });
             });
