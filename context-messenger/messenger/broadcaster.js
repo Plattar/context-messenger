@@ -38,6 +38,13 @@ class Broadcaster {
      * Adds a new callable interface ID to the list of callables
      */
     _push(interfaceID) {
+        // remove existing in case of double-up
+        const index = this._interfaces.indexOf(interfaceID);
+
+        if (index > -1) {
+            this._interfaces.splice(index, 1);
+        }
+
         this._interfaces.push(interfaceID);
     }
 }
