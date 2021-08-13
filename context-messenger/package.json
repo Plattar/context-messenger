@@ -1,6 +1,6 @@
 {
   "name": "@plattar/context-messenger",
-  "version": "1.106.2",
+  "version": "0.0.1",
   "description": "Context Messenger framework for cross-iframe communication (https://www.plattar.com)",
   "main": "index.js",
   "module": "index.js",
