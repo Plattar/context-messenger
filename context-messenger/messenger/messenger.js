@@ -84,7 +84,7 @@ class Messenger {
         const remoteInterface = new RemoteInterface(childNode.contentWindow, "*");
 
         // propagate to the child to setup the proper parent-child relationship
-        remoteInterface.send("__messenger__parent_init_inv");
+        remoteInterface.send("__messenger__parent_init_inv", { id: childNode.id });
     }
 
     /**
@@ -132,7 +132,7 @@ class Messenger {
         });
 
         GlobalEventHandler.instance().listen("__messenger__child_init_inv", (src, data) => {
-            const iframeID = src.id;
+            const iframeID = data.id;
 
             // check reserved key list
             switch (iframeID) {
@@ -167,7 +167,7 @@ class Messenger {
             this["parent"].setup(new RemoteInterface(src.source, "*"));
 
             // propagate back upwards to setup the child element
-            src.send("__messenger__child_init_inv");
+            src.send("__messenger__child_init_inv", { id: data.id });
         });
 
         // this listener will fire remotely to execute a function in the current
