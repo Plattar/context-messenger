@@ -147,7 +147,7 @@ class Messenger {
 
             // initialise the child iframe as a messenger pipe
             this[iframeID] = new RemoteFunctionList(iframeID);
-            this[iframeID].setup(new RemoteInterface(src.source, src.origin));
+            this[iframeID].setup(new RemoteInterface(src.source, "*"));
 
             // add the interface to the broadcaster
             this._broadcaster._push(iframeID);
@@ -164,7 +164,7 @@ class Messenger {
          */
         GlobalEventHandler.instance().listen("__messenger__parent_init_inv", (src, data) => {
             this["parent"] = new RemoteFunctionList("parent");
-            this["parent"].setup(new RemoteInterface(src.source, src.origin));
+            this["parent"].setup(new RemoteInterface(src.source, "*"));
 
             // propagate back upwards to setup the child element
             src.send("__messenger__child_init_inv");
