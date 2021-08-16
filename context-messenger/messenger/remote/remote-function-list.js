@@ -4,7 +4,6 @@ class RemoteFunctionList {
     constructor(remoteName) {
 
         this._remoteInterface = undefined;
-        this._callback = undefined;
 
         this._remoteName = remoteName;
 
@@ -29,9 +28,7 @@ class RemoteFunctionList {
                 switch (prop) {
                     case "setup":
                     case "isValid":
-                    case "onload":
                     case "_remoteInterface":
-                    case "_callback":
                     case "name":
                     case "_remoteName":
                         return target[prop];
@@ -50,7 +47,7 @@ class RemoteFunctionList {
                 };
             },
             set: (target, prop, value) => {
-                if (prop === "_remoteInterface" || prop === "_callback") {
+                if (prop === "_remoteInterface") {
                     target[prop] = value;
 
                     return true;
@@ -67,10 +64,6 @@ class RemoteFunctionList {
         }
 
         this._remoteInterface = remoteInterface;
-
-        if (this._callback) {
-            this._callback();
-        }
     }
 
     get name() {
@@ -79,14 +72,6 @@ class RemoteFunctionList {
 
     isValid() {
         return this._remoteInterface != undefined;
-    }
-
-    onload(callback) {
-        this._callback = callback;
-
-        if (this.isValid()) {
-            this._callback();
-        }
     }
 }
 

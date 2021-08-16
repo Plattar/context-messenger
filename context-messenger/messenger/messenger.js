@@ -27,8 +27,12 @@ class Messenger {
         // framework added.. see _setup() function
         this._parentFunctionList = undefined;
 
-        // these are the pre-registered available child objects
-        this._callableList = [];
+        // these are the callback functions to be executed when specific frames
+        // are loaded
+        const callbacks = new Map();
+
+        // set object reference
+        this._callbacks = callbacks;
 
         this._setup();
 
@@ -41,11 +45,18 @@ class Messenger {
                             return callback();
                         }
 
-                        if (!target[variable]) {
-                            target[variable] = new RemoteFunctionList(variable);
+                        if (target[variable]) {
+                            return callback();
                         }
 
-                        target[variable].onload(callback);
+                        if (callbacks.has(variable)) {
+                            const array = callbacks.get(variable);
+
+                            array.push(callback);
+                        }
+                        else {
+                            callbacks.set(variable, [callback]);
+                        }
                     };
                 }
 
@@ -58,6 +69,7 @@ class Messenger {
                     case "_registerListeners":
                     case "_id":
                     case "_broadcaster":
+                    case "_callbacks":
                     case "_parentStack": return target[prop];
                     default:
                         break;
@@ -128,6 +140,26 @@ class Messenger {
             // add the interface to the broadcaster
             this._broadcaster._push(iframeID);
 
+            const callbacks = this._callbacks;
+
+            // we have registered callbacks, begin execution
+            if (callbacks.has(iframeID)) {
+                const array = callbacks.get(iframeID);
+
+                if (array) {
+                    array.forEach((item, _) => {
+                        try {
+                            if (item) {
+                                item();
+                            }
+                        }
+                        catch (err) { }
+                    });
+                }
+            }
+
+            callbacks.delete(iframeID);
+
             src.send("__messenger__parent_init");
         });
 
@@ -151,11 +183,53 @@ class Messenger {
 
             // add the interface to the broadcaster
             this._broadcaster._push(iframeID);
+
+            const callbacks = this._callbacks;
+
+            // we have registered callbacks, begin execution
+            if (callbacks.has(iframeID)) {
+                const array = callbacks.get(iframeID);
+
+                if (array) {
+                    array.forEach((item, _) => {
+                        try {
+                            if (item) {
+                                item();
+                            }
+                        }
+                        catch (err) { }
+                    });
+                }
+            }
+
+            callbacks.delete(iframeID);
         });
 
         GlobalEventHandler.instance().listen("__messenger__parent_init", (src, data) => {
-            this["parent"] = new RemoteFunctionList("parent");
-            this["parent"].setup(new RemoteInterface(src.source, src.origin));
+            const iframeID = "parent";
+
+            this[iframeID] = new RemoteFunctionList(iframeID);
+            this[iframeID].setup(new RemoteInterface(src.source, src.origin));
+
+            const callbacks = this._callbacks;
+
+            // we have registered callbacks, begin execution
+            if (callbacks.has(iframeID)) {
+                const array = callbacks.get(iframeID);
+
+                if (array) {
+                    array.forEach((item, _) => {
+                        try {
+                            if (item) {
+                                item();
+                            }
+                        }
+                        catch (err) { }
+                    });
+                }
+            }
+
+            callbacks.delete(iframeID);
         });
 
         /**
@@ -163,8 +237,30 @@ class Messenger {
          * Used for cross-origin initialisation of the messenger framework
          */
         GlobalEventHandler.instance().listen("__messenger__parent_init_inv", (src, data) => {
-            this["parent"] = new RemoteFunctionList("parent");
-            this["parent"].setup(new RemoteInterface(src.source, "*"));
+            const iframeID = "parent";
+
+            this[iframeID] = new RemoteFunctionList(iframeID);
+            this[iframeID].setup(new RemoteInterface(src.source, "*"));
+
+            const callbacks = this._callbacks;
+
+            // we have registered callbacks, begin execution
+            if (callbacks.has(iframeID)) {
+                const array = callbacks.get(iframeID);
+
+                if (array) {
+                    array.forEach((item, _) => {
+                        try {
+                            if (item) {
+                                item();
+                            }
+                        }
+                        catch (err) { }
+                    });
+                }
+            }
+
+            callbacks.delete(iframeID);
 
             // propagate back upwards to setup the child element
             src.send("__messenger__child_init_inv", { id: data.id });
