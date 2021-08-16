@@ -42,11 +42,14 @@ class RemoteInterface {
      * Creates and returns a default RemoteInterface for the parent stack
      */
     static default() {
-        const parentStack = window.parent ? ((window.frameElement && window.frameElement.nodeName == "IFRAME") ? window.parent : undefined) : undefined;
+        try {
+            const parentStack = window.parent ? ((window.frameElement && window.frameElement.nodeName == "IFRAME") ? window.parent : undefined) : undefined;
 
-        if (parentStack) {
-            return new RemoteInterface(parentStack, "*");
+            if (parentStack) {
+                return new RemoteInterface(parentStack, "*");
+            }
         }
+        catch (err) { }
 
         return undefined;
     }
