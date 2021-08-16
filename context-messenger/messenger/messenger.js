@@ -81,7 +81,7 @@ class Messenger {
      * The node must be stup via messenger-framework propagation
      */
     addChild(childNode) {
-        const remoteInterface = new RemoteInterface(childNode, "*");
+        const remoteInterface = new RemoteInterface(childNode.contentWindow, "*");
 
         // propagate to the child to setup the proper parent-child relationship
         remoteInterface.send("__messenger__parent_init_inv");
