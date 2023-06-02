@@ -9,7 +9,7 @@ class FunctionObserver {
      * Adds a new callback/listener using the provided function name
      * and a callback function
      */
-    add(functionName, callback) {
+    observe(functionName, callback) {
         if (!functionName || !Util.isFunction(callback)) {
             return;
         }
@@ -40,12 +40,38 @@ class FunctionObserver {
         const list = observers.get(functionName);
 
         // search and remove function from the list if it exists
-        if (!list) {
+        if (list) {
             const index = list.indexOf(callback);
 
             if (index > -1) {
                 list.splice(index, 1);
             }
+        }
+    }
+
+    /**
+     * Called by an external module in order to execute all callbacks
+     * belonging to the provided function
+     */
+    call(functionName, data) {
+        if (!functionName || !data) {
+            return;
+        }
+
+        const observers = this._observers;
+
+        const list = observers.get(functionName);
+
+        // search and remove function from the list if it exists
+        if (list && list.length > 0) {
+            list.forEach((observer) => {
+                try {
+                    if (observer) {
+                        observer(data);
+                    }
+                }
+                catch (e) {/*silent*/ }
+            });
         }
     }
 }
