@@ -18,14 +18,14 @@ class Messenger {
         // ensure the parent stack does not target itself
         this._parentStack = RemoteInterface.default();
 
+        // allows listening for function calls and returns
+        this._functionObserver = new FunctionObserver();
+
         // allow adding local functions immedietly
         this._currentFunctionList = new CurrentFunctionList();
 
         // allows calling functions on everything
         this._broadcaster = new Broadcaster(this);
-
-        // allows listening for function calls and returns
-        this._functionObserver = new FunctionObserver();
 
         // we still need to confirm if a parent exists and has the messenger
         // framework added.. see _setup() function
@@ -147,7 +147,7 @@ class Messenger {
             }
 
             // initialise the child iframe as a messenger pipe
-            this[iframeID] = new RemoteFunctionList(iframeID);
+            this[iframeID] = new RemoteFunctionList(iframeID, this._functionObserver);
             this[iframeID].setup(new RemoteInterface(src.source, src.origin));
 
             // add the interface to the broadcaster

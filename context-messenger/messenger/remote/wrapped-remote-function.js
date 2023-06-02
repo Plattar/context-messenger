@@ -7,9 +7,10 @@ const GlobalEventHandler = require("../global-event-handler.js");
  * function calls.
  */
 class WrappedRemoteFunction {
-    constructor(funcName, remoteInterface) {
+    constructor(funcName, remoteInterface, functionObserver) {
         this._funcName = funcName;
         this._remoteInterface = remoteInterface;
+        this._functionObserver = functionObserver;
 
         this._callInstances = {};
 
@@ -35,9 +36,23 @@ class WrappedRemoteFunction {
 
             // perform the promise callbacks
             if (data.function_status === "success") {
+                // execute the observers
+                this._functionObserver.call(data.function_name, {
+                    type: "return",
+                    state: "success",
+                    data: data.function_args
+                });
+
                 promise.accept(data.function_args);
             }
             else {
+                // execute the observers
+                this._functionObserver.call(data.function_name, {
+                    type: "return",
+                    state: "exception",
+                    data: new Error(data.function_args)
+                });
+
                 promise.reject(new Error(data.function_args));
             }
         });
@@ -72,6 +87,13 @@ class WrappedRemoteFunction {
                 instance_id: instanceID,
                 function_name: this._funcName,
                 function_args: args
+            });
+
+            // execute the observers
+            this._functionObserver.call(this._funcName, {
+                type: "call",
+                state: "success",
+                data: args
             });
         });
     }
