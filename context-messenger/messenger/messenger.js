@@ -4,6 +4,7 @@ const RemoteFunctionList = require("./remote/remote-function-list");
 const Util = require("./util/util.js");
 const GlobalEventHandler = require("./global-event-handler.js");
 const Broadcaster = require("./broadcaster.js");
+const FunctionObserver = require("./function-observer.js");
 
 /**
  * Messenger is a singleton that allows calling functions in multiple
@@ -22,6 +23,9 @@ class Messenger {
 
         // allows calling functions on everything
         this._broadcaster = new Broadcaster(this);
+
+        // allows listening for function calls and returns
+        this._functionObserver = new FunctionObserver();
 
         // we still need to confirm if a parent exists and has the messenger
         // framework added.. see _setup() function
@@ -65,10 +69,12 @@ class Messenger {
                     case "self": return target._currentFunctionList;
                     case "broadcast": return target._broadcaster;
                     case "addChild":
+                    case "observer":
                     case "_setup":
                     case "_registerListeners":
                     case "_id":
                     case "_broadcaster":
+                    case "_functionObserver":
                     case "_callbacks":
                     case "_parentStack": return target[prop];
                     default:
@@ -86,6 +92,13 @@ class Messenger {
                 return target[prop];
             }
         });
+    }
+
+    /**
+     * Returns the FunctionObserver allowing adding observers to function calls
+     */
+    get observer() {
+        return this._functionObserver;
     }
 
     /**

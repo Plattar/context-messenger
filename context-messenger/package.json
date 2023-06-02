@@ -38,9 +38,9 @@
   },
   "homepage": "https://www.plattar.com",
   "devDependencies": {
-    "@babel/cli": "^7.13.14",
-    "@babel/core": "^7.13.14",
-    "@babel/preset-env": "^7.13.12",
+    "@babel/cli": "^7.21.5",
+    "@babel/core": "^7.22.1",
+    "@babel/preset-env": "^7.22.4",
     "browserify": "^17.0.0",
     "uglify-es": "^3.3.9"
   }
