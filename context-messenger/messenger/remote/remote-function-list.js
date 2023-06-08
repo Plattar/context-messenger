@@ -5,6 +5,7 @@ class RemoteFunctionList {
 
         this._remoteInterface = undefined;
         this._functionObserver = functionObserver;
+        console.log("RemoteFunctionList - " + functionObserver);
         this._remoteName = remoteName;
 
         return new Proxy(this, {
@@ -39,6 +40,7 @@ class RemoteFunctionList {
 
                 // on first access, we create a WrappedValue type
                 if (!target[prop]) {
+                    console.log("WrappedFunction.create() - " + target._functionObserver);
                     target[prop] = new WrappedFunction(prop, target._remoteInterface, target._functionObserver);
                 }
 

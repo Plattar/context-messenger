@@ -12,6 +12,8 @@ class WrappedRemoteFunction {
         this._remoteInterface = remoteInterface;
         this._functionObserver = functionObserver;
 
+        console.log("WrappedRemoteFunction - " + this._functionObserver);
+
         this._callInstances = {};
 
         // listen for function execution results
@@ -37,7 +39,8 @@ class WrappedRemoteFunction {
             // perform the promise callbacks
             if (data.function_status === "success") {
                 // execute the observers
-                this._functionObserver.call(data.function_name, {
+                console.log("WrappedRemoteFunction.call - " + this._functionObserver);
+                this._functionObserver.call(this._funcName, {
                     type: "return",
                     state: "success",
                     data: data.function_args
@@ -47,7 +50,7 @@ class WrappedRemoteFunction {
             }
             else {
                 // execute the observers
-                this._functionObserver.call(data.function_name, {
+                this._functionObserver.call(this._funcName, {
                     type: "return",
                     state: "exception",
                     data: new Error(data.function_args)
