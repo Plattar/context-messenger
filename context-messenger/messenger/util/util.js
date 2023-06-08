@@ -20,6 +20,13 @@ class Util {
     static isError(e) {
         return e && e.stack && e.message && typeof e.stack === "string" && typeof e.message === "string";
     }
+
+    /**
+     * checks if the provided object is a type of Function object
+     */
+    static isFunction(obj) {
+        return obj && obj instanceof Function;
+    }
 }
 
 module.exports = Util;
