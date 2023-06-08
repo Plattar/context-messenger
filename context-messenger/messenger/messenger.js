@@ -147,7 +147,6 @@ class Messenger {
             }
 
             // initialise the child iframe as a messenger pipe
-            console.log("_registerListeners - " + this._functionObserver);
             this[iframeID] = new RemoteFunctionList(iframeID, this._functionObserver);
             this[iframeID].setup(new RemoteInterface(src.source, src.origin));
 
